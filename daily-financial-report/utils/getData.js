@@ -6,7 +6,7 @@
 //     balanceAlDiaDeHoy: number;
 //     gastosPendientes: {
 //       nombre: string;
-//       columnamonto: number;
+//       columnaMonto: number;
 //     }[]
 //   };
 // }

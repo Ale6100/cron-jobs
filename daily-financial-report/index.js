@@ -19,7 +19,7 @@ const main = async () => {
   const { gastoDiario, balanceAlDiaDeHoy, gastosPendientes } = response.data;
 
   const gastosPendientesMessage = gastosPendientes.length > 0
-    ? `- Gastos pendientes:\n${gastosPendientes.map(gasto => `  - ${gasto.nombre}: *${formatPrice(gasto.columnamonto)}*`).join("\n")}`
+    ? `- Gastos pendientes:\n${gastosPendientes.map(gasto => `  - ${gasto.nombre}: *${formatPrice(gasto.columnaMonto)}*`).join("\n")}`
     : "- No hay gastos pendientes.";
 
   const message = `
