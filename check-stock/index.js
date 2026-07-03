@@ -7,7 +7,7 @@ const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY;
 const url = 'https://www.worldargentina.com.ar/productos/tarjeta-de-proximidad-hid-prox-card-ii';
 
 async function hayStock() {
-    const browser = await puppeteer.launch({ headless: 'shell' });
+    const browser = await puppeteer.launch({ headless: 'shell', args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
     try {
