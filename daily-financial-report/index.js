@@ -13,7 +13,7 @@ const main = async () => {
     apiKey: CRON_API_KEY,
   })
 
-  if (response?.statusCode != 200) return console.error(JSON.stringify(response?.message));
+  if (response?.statusCode != 200) return console.error(JSON.stringify(response));
   if (!response?.data) return console.error("Datos no encontrados en la respuesta del backend");
 
   const { gastoDiario, balanceAlDiaDeHoy } = response.data;
