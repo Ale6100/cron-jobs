@@ -1,6 +1,6 @@
-import { getData } from "./util/getData.js";
-import { sendMessage } from "./util/sendMessage.js";
-import { formatPrice } from "./util/util.js";
+import { getData } from "./utils/getData.js";
+import { sendMessage } from "../utils/sendMessage.js";
+import { formatPrice } from "../utils/util.js";
 
 const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE;
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY;

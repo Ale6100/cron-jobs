@@ -13,5 +13,8 @@
   "devDependencies": {
     "@types/node": "^26.1.0",
     "tsx": "^4.22.5"
+  },
+  "dependencies": {
+    "puppeteer": "^25.3.0"
   }
 }
