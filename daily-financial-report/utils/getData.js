@@ -4,6 +4,10 @@
 //   data?: {
 //     gastoDiario: number;
 //     balanceAlDiaDeHoy: number;
+//     gastosPendientes: {
+//       nombre: string;
+//       columnamonto: number;
+//     }[]
 //   };
 // }
 
