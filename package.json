@@ -5,6 +5,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "check-stock": "node --env-file=.env --import tsx check-stock/index.ts",
+    "check-stock-prod": "node --import tsx check-stock/index.ts",
+    "daily-financial-report": "node --env-file=.env --import tsx daily-financial-report/index.ts",
+    "daily-financial-report-prod": "node --import tsx daily-financial-report/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,7 +16,8 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "tsx": "^4.22.5"
+    "tsx": "^4.22.5",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "puppeteer": "^25.3.0"

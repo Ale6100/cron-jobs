@@ -1,10 +1,10 @@
-// type SendMessageParams = {
-//   phone: string;
-//   apikey: string;
-//   text: string;
-// }
+type SendMessageParams = {
+  phone: string;
+  apikey: string;
+  text: string;
+}
 
-export const sendMessage = async ({ phone, apikey, text }) => {
+export const sendMessage = async ({ phone, apikey, text }: SendMessageParams) => {
   const queryString = new URLSearchParams({
     phone,
     text,

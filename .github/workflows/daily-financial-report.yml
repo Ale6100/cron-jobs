@@ -19,7 +19,7 @@ jobs:
           node-version: 24
 
       - name: Execute script
-        run: node daily-financial-report/index.js
+        run: node --import tsx daily-financial-report/index.ts
         env:
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
           WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}

@@ -8,6 +8,10 @@ const URL_BACKEND = process.env.URL_BACKEND;
 const CRON_API_KEY = process.env.CRON_API_KEY;
 
 const main = async () => {
+  if (!WHATSAPP_PHONE || !WHATSAPP_API_KEY || !URL_BACKEND || !CRON_API_KEY) {
+    return console.error("Faltan variables de entorno necesarias para ejecutar el script");
+  }
+
   const response = await getData({
     url: URL_BACKEND,
     apiKey: CRON_API_KEY,
@@ -19,7 +23,7 @@ const main = async () => {
   const { gastoDiario, balanceAlDiaDeHoy, gastosPendientes } = response.data;
 
   const gastosPendientesMessage = gastosPendientes.length > 0
-    ? `- Gastos pendientes:\n${gastosPendientes.map(gasto => `  - ${gasto.nombre}: *${formatPrice(gasto.columnaMonto)}*`).join("\n")}`
+    ? `- Gastos pendientes:\n${gastosPendientes.map(gasto => `  - ${gasto.nombre}: *${formatPrice(gasto.monto)}*`).join("\n")}`
     : "- No hay gastos pendientes.";
 
   const message = `
