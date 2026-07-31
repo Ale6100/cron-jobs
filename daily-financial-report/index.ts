@@ -20,19 +20,13 @@ const main = async () => {
   if (response?.statusCode != 200) return console.error(JSON.stringify(response));
   if (!response?.data) return console.error("Datos no encontrados en la respuesta del backend");
 
-  const { gastoDiario, balanceAlDiaDeHoy, gastosPendientes } = response.data;
+  const { gastosPendientes } = response.data;
 
-  const gastosPendientesMessage = gastosPendientes.length > 0
-    ? `- Gastos pendientes:\n${gastosPendientes.map(gasto => `  - ${gasto.nombre}: *${formatPrice(gasto.monto)}*`).join("\n")}`
-    : "- No hay gastos pendientes.";
+  if (gastosPendientes.length === 0) return;
 
   const message = `
-  💲*RESUMEN FINANCIERO DIARIO*
-  - Al finalizar el día de hoy, deberías tener *${formatPrice(balanceAlDiaDeHoy)}* en tu cuenta.
-
-  - Hoy deberías gastar menos de *${formatPrice(gastoDiario)}*
-
-  ${gastosPendientesMessage}
+  💲*GASTOS PENDIENTES*
+  ${gastosPendientes.map(gasto => `- ${gasto.nombre}: *${formatPrice(gasto.monto)}*`).join("\n")}
   `
 
   await sendMessage({
