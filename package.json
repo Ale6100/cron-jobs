@@ -8,6 +8,7 @@
     "daily-financial-report": "node --env-file=.env --import tsx daily-financial-report/index.ts",
     "daily-financial-report-prod": "node --import tsx daily-financial-report/index.ts",
     "daily-deals-report": "node --env-file=.env --import tsx daily-deals-report/index.ts",
+    "daily-deals-report-test": "node --env-file=.env --import tsx daily-deals-report/test.ts",
     "daily-deals-report-prod": "node --import tsx daily-deals-report/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
