@@ -163,8 +163,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
     : await fetchAvailableGeminiModels(apiKey);
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-  // Reintentos rápidos por modelo (1s y 3s): si un modelo está saturado, conmutamos de inmediato al siguiente
-  const RETRY_DELAYS_SEC = [1, 3];
+  // Secuencia Fibonacci extendida (>6 minutos en total, 12 intentos) para dar suficiente tiempo de recuperación ante picos de demanda
+  const RETRY_DELAYS_SEC = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
   let lastError: Error | null = null;
 
   for (const model of candidateModels) {
