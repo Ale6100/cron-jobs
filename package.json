@@ -10,6 +10,9 @@
     "daily-deals-report": "node --env-file=.env --import tsx daily-deals-report/index.ts",
     "daily-deals-report-test": "node --env-file=.env --import tsx daily-deals-report/test.ts",
     "daily-deals-report-prod": "node --import tsx daily-deals-report/index.ts",
+    "daily-jobs-report": "node --env-file=.env --import tsx daily-jobs-report/index.ts",
+    "daily-jobs-report-test": "node --env-file=.env --import tsx daily-jobs-report/test.ts",
+    "daily-jobs-report-prod": "node --import tsx daily-jobs-report/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
