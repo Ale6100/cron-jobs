@@ -54,12 +54,13 @@ export const marianaProfile: JobsReportProfile = {
   firstName: "Mariana",
   telegramChatIdEnvVar: "TELEGRAM_CHAT_ID_MARIANA",
   showScore: false,
+  maxJobsInReport: 3,
   sources: [
     { name: "Bumeran", fetchJobs: fetchBumeranJobs },
     { name: "Computrabajo", fetchJobs: fetchComputrabajoJobs },
   ],
   buildEvaluationCriteria,
-  loadPayFormat: async () => ({
+  loadPayFormat: () => Promise.resolve({
     formatPay: (monthlyArs) => `~${formatPrice(monthlyArs, false)} ARS/mes`,
   }),
 };

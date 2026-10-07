@@ -6,7 +6,7 @@ Automatizaciones y reportes programados para uso personal, ejecutados periódica
 
 | Script | Descripción | Destino |
 | :--- | :--- | :--- |
-| `daily-jobs-report` | Recolecta ofertas laborales multi-fuente según un perfil, las evalúa con Google Gemini y notifica a diario el Top 3 según afinidad y pago estimado. Ver [Perfiles del reporte de empleos](#perfiles-del-reporte-de-empleos). | Telegram |
+| `daily-jobs-report` | Recolecta ofertas laborales multi-fuente según un perfil, las evalúa con Google Gemini y notifica a diario las mejores según afinidad y pago estimado. Ver [Perfiles del reporte de empleos](#perfiles-del-reporte-de-empleos). | Telegram |
 | `daily-deals-report` | Monitorea y recopila ofertas destacadas de tiendas de tecnología y electrodomésticos. | Telegram |
 | `daily-financial-report` | Consulta gastos pendientes en el backend y envía un resumen de pagos. | WhatsApp |
 
@@ -47,14 +47,14 @@ Los scripts `*-test` (por ejemplo `daily-jobs-report-test`) no son tests automat
 
 `daily-jobs-report` se ejecuta para un perfil (`daily-jobs-report/profiles/`). Cada perfil define sus fuentes de ofertas, los criterios que Gemini usa para evaluarlas, cómo se muestra el pago y el chat de Telegram de destino; la consulta a Gemini, el ranking y el armado del mensaje se comparten.
 
-| Perfil | Búsqueda | Fuentes | Pago mostrado |
-| :--- | :--- | :--- | :--- |
-| `alejandro` | Desarrollo frontend/full stack, remoto o en CABA y alrededores | Get on Board, RemoteOK, Remotive | USD/hora y su equivalente en ARS |
-| `mariana` | Comercio, caja, atención al cliente, ayudante de cocina y cuidado de personas mayores, remoto o en CABA y alrededores | Bumeran, Computrabajo | ARS/mes |
+| Perfil | Búsqueda | Fuentes | Pago mostrado | Ofertas por día |
+| :--- | :--- | :--- | :--- | :--- |
+| `alejandro` | Desarrollo frontend/full stack, remoto o en CABA y alrededores | Get on Board, RemoteOK, Remotive | USD/hora y su equivalente en ARS | 1 |
+| `mariana` | Comercio, caja, atención al cliente, ayudante de cocina y cuidado de personas mayores, remoto o en CABA y alrededores | Bumeran, Computrabajo | ARS/mes | 3 |
 
 Bumeran se consulta mediante la API interna que usa su propio sitio y Computrabajo leyendo sus páginas públicas, ya que ninguno ofrece una API pública; un cambio en esos sitios puede romper la extracción sin aviso.
 
-Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo a la `matrix` del workflow y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de modo que si uno falla el resto igual se envía.
+Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo en el workflow (a las opciones del input `profile` y a la lista por defecto de la `matrix`) y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de modo que si uno falla el resto igual se envía. El cron corre todos los perfiles; al ejecutarlo a mano ("Run workflow") se puede elegir uno solo.
 
 El repositorio es público: los perfiles no deben incluir datos personales (documento, teléfono, mail, dirección exacta). Los CV usados como referencia (`cv-*.pdf`) están ignorados por git.
 

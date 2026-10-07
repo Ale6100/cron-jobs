@@ -145,6 +145,7 @@ export const alejandroProfile: JobsReportProfile = {
   firstName: "Alejandro",
   telegramChatIdEnvVar: "TELEGRAM_CHAT_ID",
   showScore: true,
+  maxJobsInReport: 1,
   sources: [
     { name: "Get on Board", fetchJobs: fetchGetOnBoardJobs },
     { name: "RemoteOK", fetchJobs: fetchRemoteOkJobs },

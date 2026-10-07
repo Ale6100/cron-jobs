@@ -97,7 +97,7 @@ const main = async () => {
     const headerNote = payFormat.headerNote ? ` (${payFormat.headerNote})` : "";
     let messageText = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para ${profile.firstName}${headerNote}_\n`;
 
-    matchedJobs.slice(0, 3).forEach((job) => {
+    matchedJobs.slice(0, profile.maxJobsInReport).forEach((job) => {
       messageText += `${SEPARADOR}${formatJobItem(job, payFormat)}`;
     });
 

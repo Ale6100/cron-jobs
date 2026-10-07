@@ -27,6 +27,7 @@ export interface JobsReportProfile {
   firstName: string;
   telegramChatIdEnvVar: string;
   showScore: boolean;
+  maxJobsInReport: number;
   sources: JobSourceFetcher[];
   /** Encabezado del prompt de Gemini: perfil del candidato y criterios, incluido cómo calcular `estimatedPay`. */
   buildEvaluationCriteria: () => string;
