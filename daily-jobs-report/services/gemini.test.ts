@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import { jsonResponse, mockFetch, silenceConsole } from "../../test-helpers/mockFetch.js";
 import type { CleanJob } from "../types.js";
-import { evaluateJobsWithGemini, fetchAvailableGeminiModels } from "./gemini.js";
+import { describeQuotaError, evaluateJobsWithGemini, fetchAvailableGeminiModels } from "./gemini.js";
 
 const buildCleanJob = (id: string): CleanJob => ({
   id,
@@ -32,9 +32,61 @@ const buildMatch = (id: string, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+describe("describeQuotaError", () => {
+  it("resume los límites agotados y la espera sugerida por Google", () => {
+    const body = JSON.stringify({
+      error: {
+        code: 429,
+        message: "You exceeded your current quota...",
+        details: [
+          {
+            "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+            violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier", quotaValue: "10" }],
+          },
+          { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "23s" },
+        ],
+      },
+    });
+
+    assert.equal(describeQuotaError(body), "GenerateRequestsPerMinutePerProjectPerModel-FreeTier = 10; reintentar en 23s");
+  });
+
+  it("usa el mensaje del error si no trae el detalle de la cuota", () => {
+    assert.equal(describeQuotaError(JSON.stringify({ error: { message: "Resource exhausted" } })), "Resource exhausted");
+  });
+
+  it("devuelve el texto crudo si la respuesta no es JSON", () => {
+    assert.equal(describeQuotaError("Too Many Requests"), "Too Many Requests");
+  });
+});
+
 describe("fetchAvailableGeminiModels", () => {
   beforeEach(silenceConsole);
   afterEach(() => mock.restoreAll());
+
+  it("prueba todos los Flash de versión 3 o superior antes que los Flash-Lite, y estos antes que los Pro", async () => {
+    mockFetch(() => jsonResponse({
+      models: [
+        "gemini-3.1-pro-preview",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3.1-flash-lite",
+        "gemini-3-flash-preview",
+        "gemini-3.5-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+      ].map((name) => ({ name: `models/${name}`, supportedGenerationMethods: ["generateContent"] })),
+    }));
+
+    assert.deepEqual(await fetchAvailableGeminiModels("key"), [
+      "gemini-3.5-flash",
+      "gemini-3-flash-preview",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-3.1-flash-lite-preview",
+      "gemini-3.1-pro-preview",
+    ]);
+  });
 
   it("prioriza modelos Flash y luego la versión más nueva, descartando modelos no aptos", async () => {
     mockFetch(() => jsonResponse({

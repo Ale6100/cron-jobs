@@ -92,7 +92,7 @@ export const getCandidateProfile = (): CandidateProfile => {
   };
 };
 
-const buildEvaluationCriteria = (): string => {
+const buildGeminiPromptHeader = (): string => {
   const profile = getCandidateProfile();
 
   return `
@@ -151,7 +151,7 @@ export const alejandroProfile: JobsReportProfile = {
     { name: "RemoteOK", fetchJobs: fetchRemoteOkJobs },
     { name: "Remotive", fetchJobs: fetchRemotiveJobs },
   ],
-  buildEvaluationCriteria,
+  buildGeminiPromptHeader,
   loadPayFormat: async () => {
     const dolarRate = await getDolarPrice();
     console.log(`Cotización Dólar referencia: $${dolarRate} ARS`);

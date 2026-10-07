@@ -37,7 +37,7 @@ npm test            # tests unitarios
 npm run typecheck   # chequeo de tipos
 ```
 
-Los tests son unitarios, usan el runner nativo de Node (`node:test`) y viven junto al código (`*.test.ts`). Cubren la lógica propia que puede romperse sin que se note: filtros y parseo de cada fuente, selección de modelos y filtrado de resultados de Gemini, y formatos de cada perfil. No se conectan a ningún servicio: `fetch` se simula con respuestas armadas a partir de las reales (`test-helpers/mockFetch.ts`), y `test-helpers/blockNetwork.ts` hace fallar cualquier request que un test no haya simulado. El workflow `tests.yml` los corre en cada push y pull request.
+Los tests son unitarios, usan el runner nativo de Node (`node:test`) y viven junto al código (`*.test.ts`). Cubren la lógica propia que puede romperse sin que se note: filtros y parseo de cada fuente, selección de modelos y filtrado de resultados de Gemini, y formatos de cada perfil. No se conectan a ningún servicio: `fetch` se simula con respuestas armadas a partir de las reales (`test-helpers/mockFetch.ts`), y `test-helpers/blockNetwork.ts` hace fallar cualquier request que un test no haya simulado. El workflow `tests.yml` los corre en cada push y pull request, sin descargar el Chrome de Puppeteer porque los tests no lo usan.
 
 Quedan fuera los scrapers de `daily-deals-report`, que extraen los datos dentro de un navegador real con Puppeteer.
 
@@ -54,7 +54,9 @@ Los scripts `*-test` (por ejemplo `daily-jobs-report-test`) no son tests automat
 
 Bumeran se consulta mediante la API interna que usa su propio sitio y Computrabajo leyendo sus páginas públicas, ya que ninguno ofrece una API pública; un cambio en esos sitios puede romper la extracción sin aviso.
 
-Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo en el workflow (a las opciones del input `profile` y a la lista por defecto de la `matrix`) y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de modo que si uno falla el resto igual se envía. El cron corre todos los perfiles; al ejecutarlo a mano ("Run workflow") se puede elegir uno solo.
+Las fuentes de `mariana` prefiltran por zona de forma amplia y la cercanía real la evalúa Gemini: Bumeran deja pasar los remotos y lo publicado en CABA o Provincia de Buenos Aires, y Computrabajo busca solo en CABA, porque su búsqueda por ubicación no permite incluir el conurbano sin incluir toda la provincia. Cada fuente alterna entre sus búsquedas (cajera, vendedora, etc.) para que ninguna llene sola el tope. Los topes (20 en Bumeran, 15 en Computrabajo, más bajo porque cada oferta requiere consultar su página de detalle) suman las 35 ofertas que Gemini evalúa como máximo.
+
+Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo en el workflow (a las opciones del input `profile` y a la lista por defecto de la `matrix`) y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de a uno por vez porque comparten la cuota de Gemini, y si uno falla el resto igual se envía. El cron corre todos los perfiles; al ejecutarlo a mano ("Run workflow") se puede elegir uno solo.
 
 El repositorio es público: los perfiles no deben incluir datos personales (documento, teléfono, mail, dirección exacta). Los CV usados como referencia (`cv-*.pdf`) están ignorados por git.
 
@@ -66,7 +68,7 @@ El proyecto lee variables desde el archivo `.env` en desarrollo o desde los Secr
 - `TELEGRAM_CHAT_ID`: Identificador de chat o canal de Telegram receptor. También recibe los avisos de error de todos los perfiles del reporte de empleos.
 - `TELEGRAM_CHAT_ID_MARIANA`: Chat de Mariana para el reporte de empleos. Telegram solo permite que el bot le escriba después de que ella le envíe `/start`.
 - `GEMINI_API_KEY`: Clave de API de Google Gemini para el filtrado inteligente de empleos.
-- `GEMINI_MODEL`: (Opcional) Modelo específico de Gemini a forzar. Por defecto, el sistema consulta dinámicamente la API de Google y selecciona/conmuta automáticamente entre los mejores modelos disponibles.
+- `GEMINI_MODEL`: (Opcional) Modelo específico de Gemini a forzar. Por defecto, el sistema consulta dinámicamente la API de Google y selecciona/conmuta automáticamente entre los mejores modelos disponibles: solo versiones 3 o superiores, primero los Flash, luego los Flash-Lite y por último los Pro, de la versión más nueva a la más vieja. Se pasa al modelo siguiente cuando uno agota su cuota (en el plan gratuito, la cuota diaria es por modelo).
 - `WHATSAPP_PHONE`: Número de teléfono destino para avisos de WhatsApp (CallMeBot).
 - `WHATSAPP_API_KEY`: Clave de API de CallMeBot.
 - `URL_BACKEND`: Endpoint del backend para consulta de finanzas.

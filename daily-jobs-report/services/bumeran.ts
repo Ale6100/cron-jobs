@@ -36,8 +36,6 @@ const stripHtml = (html: string): string => {
     .trim();
 };
 
-// Bumeran es un portal argentino: los avisos remotos ya son aptos para trabajar desde el país.
-// Los presenciales/híbridos se acotan a CABA y Provincia de Buenos Aires; la cercanía fina la evalúa Gemini.
 const isLocationCompatible = (job: BumeranJobItem): boolean => {
   return job.modalidadTrabajo === "Remoto" || Boolean(job.localizacion?.endsWith("Buenos Aires"));
 };
@@ -78,7 +76,6 @@ const searchBumeran = async (query: string): Promise<BumeranJobItem[]> => {
   return data.content;
 };
 
-// Toma las ofertas alternando entre búsquedas para que el tope no lo llene una sola de ellas
 export const pickJobsAcrossQueries = (resultsByQuery: BumeranJobItem[][]): CleanJob[] => {
   const seenIds = new Set<number>();
   const picked: CleanJob[] = [];

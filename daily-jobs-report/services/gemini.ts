@@ -26,6 +26,35 @@ interface GeminiEvaluationResponse {
   }>;
 }
 
+interface GoogleApiErrorBody {
+  error?: {
+    message?: string;
+    details?: Array<{
+      "@type"?: string;
+      retryDelay?: string;
+      violations?: Array<{ quotaId?: string; quotaValue?: string }>;
+    }>;
+  };
+}
+
+export const describeQuotaError = (errorBody: string): string => {
+  let parsed: GoogleApiErrorBody;
+  try {
+    parsed = JSON.parse(errorBody) as GoogleApiErrorBody;
+  } catch {
+    return errorBody.slice(0, 300);
+  }
+
+  const details = parsed.error?.details ?? [];
+  const violations = details
+    .flatMap((detail) => detail.violations ?? [])
+    .map((violation) => `${violation.quotaId ?? "cuota desconocida"}${violation.quotaValue ? ` = ${violation.quotaValue}` : ""}`);
+  const retryDelay = details.find((detail) => detail.retryDelay)?.retryDelay;
+
+  const summary = violations.length > 0 ? violations.join(", ") : parsed.error?.message?.slice(0, 300) ?? "sin detalle";
+  return retryDelay ? `${summary}; reintentar en ${retryDelay}` : summary;
+};
+
 export const fetchAvailableGeminiModels = async (apiKey: string): Promise<string[]> => {
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -65,8 +94,13 @@ export const fetchAvailableGeminiModels = async (apiKey: string): Promise<string
         const isFlashA = a.includes("flash");
         const isFlashB = b.includes("flash");
         if (isFlashA !== isFlashB) return isFlashA ? -1 : 1;
+        const fullFlashFirst = Number(a.includes("lite")) - Number(b.includes("lite"));
+        if (fullFlashFirst !== 0) return fullFlashFirst;
         // Ordenar por versión descendente (ej: 3.8 > 3.7 > 3.6 > 3.5...)
-        return extractVersion(b) - extractVersion(a);
+        const newestVersionFirst = extractVersion(b) - extractVersion(a);
+        if (newestVersionFirst !== 0) return newestVersionFirst;
+        const stableBeforePreview = Number(a.includes("preview")) - Number(b.includes("preview"));
+        return stableBeforePreview;
       });
 
     if (models.length > 0) {
@@ -81,7 +115,7 @@ export const fetchAvailableGeminiModels = async (apiKey: string): Promise<string
 
 export const evaluateJobsWithGemini = async (
   jobs: CleanJob[],
-  evaluationCriteria: string,
+  promptHeader: string,
   apiKey: string
 ): Promise<JobMatch[]> => {
   if (jobs.length === 0) {
@@ -92,7 +126,7 @@ export const evaluateJobsWithGemini = async (
   const sampleJobs = jobs.slice(0, 35);
 
   const prompt = `
-${evaluationCriteria}
+${promptHeader}
 ### OFERTAS A EVALUAR:
 ${JSON.stringify(sampleJobs, null, 2)}
 
@@ -149,7 +183,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
 
         if (response.status === 429) {
           const errorBody = await response.text();
-          console.warn(`Límite de cuota (429) alcanzado en modelo ${model}. Probando siguiente modelo de respaldo...`);
+          console.warn(`Límite de cuota (429) alcanzado en modelo ${model} (${describeQuotaError(errorBody)}). Probando siguiente modelo de respaldo...`);
           lastError = new Error(`Gemini 429 en ${model}: ${errorBody}`);
           break; // Salir del bucle de reintentos y pasar al siguiente modelo
         }

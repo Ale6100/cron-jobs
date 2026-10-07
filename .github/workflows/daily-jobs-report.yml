@@ -21,8 +21,8 @@ jobs:
     environment: cron
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        # El cron no tiene inputs: corre todos los perfiles. A mano se puede elegir uno solo
         profile: ${{ fromJSON((inputs.profile && inputs.profile != 'todos') && format('["{0}"]', inputs.profile) || '["alejandro", "mariana"]') }}
     steps:
       - name: Checkout repository

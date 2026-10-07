@@ -23,10 +23,8 @@ const SEARCH_SLUGS = [
   "cuidado-de-adultos-mayores",
 ];
 
-// Las búsquedas por ubicación del portal no cubren el conurbano sin incluir toda la provincia, así que se limita a CABA
 const LOCATION_SLUG = "capital-federal";
 
-// Cada oferta requiere una consulta extra a su página de detalle, por eso el tope es más bajo que en otras fuentes
 const MAX_JOBS = 15;
 
 const REQUEST_HEADERS = {
@@ -57,7 +55,6 @@ export const extractOfferPaths = (listingHtml: string): string[] => {
   return [...new Set(paths)].filter(Boolean);
 };
 
-// Toma las ofertas alternando entre búsquedas para que el tope no lo llene una sola de ellas
 export const pickPathsAcrossSearches = (pathsBySearch: string[][]): string[] => {
   const picked = new Set<string>();
   const longestResult = Math.max(0, ...pathsBySearch.map((paths) => paths.length));

@@ -6,7 +6,6 @@ import { sendMessageTelegram } from "../utils/sendMessage.js";
 const profile = getProfileFromArgs();
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-// Los avisos de error siempre van al chat principal: quien mantiene el proyecto es quien puede resolverlos
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const REPORT_CHAT_ID = process.env[profile.telegramChatIdEnvVar];
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -23,7 +22,6 @@ const formatSalary = (job: JobMatch, payFormat: PayFormat): string => {
   return "A convenir / No especificado";
 };
 
-// Los textos vienen de los avisos y de Gemini: un `*` o `_` suelto hace que Telegram rechace el mensaje completo
 const escapeMarkdown = (text: string): string => text.replace(/([_*`[])/g, "\\$1");
 
 const formatJobItem = (job: JobMatch, payFormat: PayFormat): string => {
@@ -72,7 +70,7 @@ const main = async () => {
     }
 
     console.log("Evaluando ofertas con Gemini AI según perfil e ingresos...");
-    const matchedJobs = await evaluateJobsWithGemini(allCandidateJobs, profile.buildEvaluationCriteria(), GEMINI_API_KEY);
+    const matchedJobs = await evaluateJobsWithGemini(allCandidateJobs, profile.buildGeminiPromptHeader(), GEMINI_API_KEY);
 
     console.log(`Gemini seleccionó ${matchedJobs.length} ofertas afines.`);
 

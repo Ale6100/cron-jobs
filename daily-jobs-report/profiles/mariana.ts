@@ -5,7 +5,7 @@ import type { JobsReportProfile } from "../types.js";
 
 const BIRTH_YEAR = 1995;
 
-const buildEvaluationCriteria = (): string => {
+const buildGeminiPromptHeader = (): string => {
   const approximateAge = new Date().getFullYear() - BIRTH_YEAR;
 
   return `
@@ -59,7 +59,7 @@ export const marianaProfile: JobsReportProfile = {
     { name: "Bumeran", fetchJobs: fetchBumeranJobs },
     { name: "Computrabajo", fetchJobs: fetchComputrabajoJobs },
   ],
-  buildEvaluationCriteria,
+  buildGeminiPromptHeader,
   loadPayFormat: () => Promise.resolve({
     formatPay: (monthlyArs) => `~${formatPrice(monthlyArs, false)} ARS/mes`,
   }),

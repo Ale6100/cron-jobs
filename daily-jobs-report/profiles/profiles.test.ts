@@ -40,7 +40,7 @@ describe("marianaProfile", () => {
 
   it("calcula la edad que usa Gemini a partir del año actual", () => {
     const expectedAge = new Date().getFullYear() - 1995;
-    assert.match(marianaProfile.buildEvaluationCriteria(), new RegExp(`Edad aproximada: ${expectedAge} años`));
+    assert.match(marianaProfile.buildGeminiPromptHeader(), new RegExp(`Edad aproximada: ${expectedAge} años`));
   });
 });
 

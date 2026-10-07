@@ -29,7 +29,6 @@ export interface JobsReportProfile {
   showScore: boolean;
   maxJobsInReport: number;
   sources: JobSourceFetcher[];
-  /** Encabezado del prompt de Gemini: perfil del candidato y criterios, incluido cómo calcular `estimatedPay`. */
-  buildEvaluationCriteria: () => string;
+  buildGeminiPromptHeader: () => string;
   loadPayFormat: () => Promise<PayFormat>;
 }
