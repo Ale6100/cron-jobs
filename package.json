@@ -13,7 +13,9 @@
     "daily-jobs-report": "node --env-file=.env --import tsx daily-jobs-report/index.ts",
     "daily-jobs-report-test": "node --env-file=.env --import tsx daily-jobs-report/test.ts",
     "daily-jobs-report-prod": "node --import tsx daily-jobs-report/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --import tsx --import ./test-helpers/blockNetwork.ts --test \"daily-jobs-report/**/*.test.ts\" \"daily-deals-report/**/*.test.ts\" \"utils/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "agents:update": "git fetch -q --depth 1 https://github.com/Ale6100/Templates-IA.git main && git show FETCH_HEAD:AGENTS-template.md > AGENTS.md"
   },
   "keywords": [],
   "author": "",

@@ -1,26 +1,20 @@
-import { fetchGetOnBoardJobs } from "./services/getOnBoard.js";
-import { fetchRemoteOkJobs } from "./services/remoteOk.js";
-import { fetchRemotiveJobs } from "./services/remotive.js";
+import { getProfileFromArgs } from "./profiles/index.js";
+
+const profile = getProfileFromArgs();
 
 const runTest = async () => {
-  console.log("Ejecutando test multi-fuente (Get on Board, RemoteOK, Remotive)...");
+  const sourceNames = profile.sources.map((source) => source.name);
+  console.log(`Ejecutando test multi-fuente para ${profile.firstName} (${sourceNames.join(", ")})...`);
 
-  const [getOnBrdRes, remoteOkRes, remotiveRes] = await Promise.allSettled([
-    fetchGetOnBoardJobs(),
-    fetchRemoteOkJobs(),
-    fetchRemotiveJobs(),
-  ]);
-
-  const getOnBoardJobs = getOnBrdRes.status === "fulfilled" ? getOnBrdRes.value : [];
-  const remoteOkJobs = remoteOkRes.status === "fulfilled" ? remoteOkRes.value : [];
-  const remotiveJobs = remotiveRes.status === "fulfilled" ? remotiveRes.value : [];
+  const settledResults = await Promise.allSettled(profile.sources.map((source) => source.fetchJobs()));
+  const jobsBySource = settledResults.map((result) => (result.status === "fulfilled" ? result.value : []));
 
   console.log(`\nResultados por fuente:`);
-  console.log(`- Get on Board: ${getOnBoardJobs.length} ofertas prefiltradas`);
-  console.log(`- RemoteOK:     ${remoteOkJobs.length} ofertas prefiltradas`);
-  console.log(`- Remotive:     ${remotiveJobs.length} ofertas prefiltradas`);
+  profile.sources.forEach((source, index) => {
+    console.log(`- ${source.name}: ${jobsBySource[index]?.length ?? 0} ofertas prefiltradas`);
+  });
 
-  const all = [...getOnBoardJobs, ...remoteOkJobs, ...remotiveJobs];
+  const all = jobsBySource.flat();
   console.log(`\nTotal consolidado: ${all.length} ofertas preliminares.`);
 
   if (all.length > 0) {

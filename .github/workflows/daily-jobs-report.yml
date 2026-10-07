@@ -10,6 +10,10 @@ jobs:
   run-script:
     runs-on: ubuntu-latest
     environment: cron
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [alejandro, mariana]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,8 +28,9 @@ jobs:
         run: npm ci
 
       - name: Execute script
-        run: node --import tsx daily-jobs-report/index.ts
+        run: node --import tsx daily-jobs-report/index.ts ${{ matrix.profile }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID_MARIANA: ${{ secrets.TELEGRAM_CHAT_ID_MARIANA }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

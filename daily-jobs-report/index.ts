@@ -1,63 +1,69 @@
-import { fetchRemotiveJobs } from "./services/remotive.js";
-import { fetchGetOnBoardJobs } from "./services/getOnBoard.js";
-import { fetchRemoteOkJobs } from "./services/remoteOk.js";
 import { evaluateJobsWithGemini, type JobMatch } from "./services/gemini.js";
-import { getDolarPrice } from "./services/dolar.js";
+import { getProfileFromArgs } from "./profiles/index.js";
+import type { PayFormat } from "./types.js";
 import { sendMessageTelegram } from "../utils/sendMessage.js";
 
+const profile = getProfileFromArgs();
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+// Los avisos de error siempre van al chat principal: quien mantiene el proyecto es quien puede resolverlos
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const REPORT_CHAT_ID = process.env[profile.telegramChatIdEnvVar];
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID || !GEMINI_API_KEY) {
-  console.error("Faltan variables de entorno necesarias para ejecutar daily-jobs-report (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GEMINI_API_KEY)");
+if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID || !REPORT_CHAT_ID || !GEMINI_API_KEY) {
+  console.error(`Faltan variables de entorno necesarias para ejecutar daily-jobs-report (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, ${profile.telegramChatIdEnvVar}, GEMINI_API_KEY)`);
   process.exit(1);
 }
 
-const formatSalary = (job: JobMatch, dolarRate: number): string => {
-  if (job.estimatedHourlyUsd && job.estimatedHourlyUsd > 0) {
-    const hourlyArs = Math.round(job.estimatedHourlyUsd * dolarRate);
-    return `~$${job.estimatedHourlyUsd} USD/h (*~$${hourlyArs.toLocaleString("es-AR")} ARS/h*)`;
+const formatSalary = (job: JobMatch, payFormat: PayFormat): string => {
+  if (job.estimatedPay && job.estimatedPay > 0) {
+    return payFormat.formatPay(job.estimatedPay);
   }
   return "A convenir / No especificado";
 };
 
-const formatJobItem = (job: JobMatch, dolarRate: number): string => {
+// Los textos vienen de los avisos y de Gemini: un `*` o `_` suelto hace que Telegram rechace el mensaje completo
+const escapeMarkdown = (text: string): string => text.replace(/([_*`[])/g, "\\$1");
+
+const formatJobItem = (job: JobMatch, payFormat: PayFormat): string => {
+  const scoreLine = profile.showScore ? `⭐ *Score:* ${job.score}/10\n` : "";
+
   return `
-💼 *${job.title}* - *${job.company}*
+💼 *${escapeMarkdown(job.title)}* - *${escapeMarkdown(job.company)}*
 🌐 *Portal:* ${job.source}
-📍 *Ubicación:* ${job.location}
-⭐ *Score:* ${job.score}/10
-💵 *Pago estimado:* ${formatSalary(job, dolarRate)}
-💡 *Match:* ${job.reason}
+📍 *Ubicación:* ${escapeMarkdown(job.location)}
+${scoreLine}💵 *Pago estimado:* ${formatSalary(job, payFormat)}
+💡 *Por qué te conviene:* ${escapeMarkdown(job.reason)}
 🔗 ${job.url}
 `;
 };
 
 const main = async () => {
   try {
-    console.log("Iniciando búsqueda multi-fuente de empleos (Get on Board, RemoteOK, Remotive)...");
+    const sourceNames = profile.sources.map((source) => source.name);
+    console.log(`Iniciando búsqueda multi-fuente de empleos para ${profile.firstName} (${sourceNames.join(", ")})...`);
 
-    const [getOnBrdRes, remoteOkRes, remotiveRes, dolarRate] = await Promise.all([
-      fetchGetOnBoardJobs().catch((err) => {
-        console.warn("Aviso: Get on Board no respondió:", err);
-        return [];
-      }),
-      fetchRemoteOkJobs().catch((err) => {
-        console.warn("Aviso: RemoteOK no respondió:", err);
-        return [];
-      }),
-      fetchRemotiveJobs().catch((err) => {
-        console.warn("Aviso: Remotive no respondió:", err);
-        return [];
-      }),
-      getDolarPrice(),
+    const [settledSources, payFormat] = await Promise.all([
+      Promise.allSettled(profile.sources.map((source) => source.fetchJobs())),
+      profile.loadPayFormat(),
     ]);
 
-    console.log(`Cotización Dólar referencia: $${dolarRate} ARS`);
-    console.log(`Ofertas preliminares: Get on Board (${getOnBrdRes.length}), RemoteOK (${remoteOkRes.length}), Remotive (${remotiveRes.length})`);
+    if (settledSources.every((result) => result.status === "rejected")) {
+      throw new Error(`Ninguna fuente respondió (${sourceNames.join(", ")}): ${settledSources.map((result) => String(result.status === "rejected" && result.reason)).join(" | ")}`);
+    }
 
-    const allCandidateJobs = [...getOnBrdRes, ...remoteOkRes, ...remotiveRes];
+    const jobsBySource = settledSources.map((result, index) => {
+      if (result.status === "rejected") {
+        console.warn(`Aviso: ${profile.sources[index]?.name} no respondió:`, result.reason);
+        return [];
+      }
+      return result.value;
+    });
+
+    console.log(`Ofertas preliminares: ${profile.sources.map((source, index) => `${source.name} (${jobsBySource[index]?.length ?? 0})`).join(", ")}`);
+
+    const allCandidateJobs = jobsBySource.flat();
     console.log(`Total consolidado de ofertas preliminares: ${allCandidateJobs.length}`);
 
     if (allCandidateJobs.length === 0) {
@@ -65,8 +71,8 @@ const main = async () => {
       return;
     }
 
-    console.log("Evaluando ofertas con Gemini AI según perfil, seniority e ingresos...");
-    const matchedJobs = await evaluateJobsWithGemini(allCandidateJobs, GEMINI_API_KEY);
+    console.log("Evaluando ofertas con Gemini AI según perfil e ingresos...");
+    const matchedJobs = await evaluateJobsWithGemini(allCandidateJobs, profile.buildEvaluationCriteria(), GEMINI_API_KEY);
 
     console.log(`Gemini seleccionó ${matchedJobs.length} ofertas afines.`);
 
@@ -77,37 +83,38 @@ const main = async () => {
 
     // Ordenamiento con doble prioridad:
     // 1° Prioridad: Score de afinidad de Gemini (de mayor a menor)
-    // 2° Prioridad (Desempate): Mayor pago estimado por hora
+    // 2° Prioridad (Desempate): Mayor pago estimado (en la unidad que define cada perfil)
     matchedJobs.sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
-      const salaryA = a.estimatedHourlyUsd || 0;
-      const salaryB = b.estimatedHourlyUsd || 0;
+      const salaryA = a.estimatedPay || 0;
+      const salaryB = b.estimatedPay || 0;
       return salaryB - salaryA;
     });
 
     const SEPARADOR = "\n━━━━━━━━━━━━━━━━\n";
-    let messageText = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para Alejandro (Dólar ref: $${dolarRate})_\n`;
+    const headerNote = payFormat.headerNote ? ` (${payFormat.headerNote})` : "";
+    let messageText = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para ${profile.firstName}${headerNote}_\n`;
 
     matchedJobs.slice(0, 3).forEach((job) => {
-      messageText += `${SEPARADOR}${formatJobItem(job, dolarRate)}`;
+      messageText += `${SEPARADOR}${formatJobItem(job, payFormat)}`;
     });
 
     await sendMessageTelegram({
       token: TELEGRAM_BOT_TOKEN,
-      chatId: TELEGRAM_CHAT_ID,
+      chatId: REPORT_CHAT_ID,
       text: messageText,
     });
     console.log("Mensaje con ofertas enviado exitosamente a Telegram.");
   } catch (error) {
-    console.error("Error en Daily Jobs Report:", error);
+    console.error(`Error en Daily Jobs Report (${profile.firstName}):`, error);
     try {
       const errorMsg = error instanceof Error ? error.message : String(error);
       await sendMessageTelegram({
         token: TELEGRAM_BOT_TOKEN,
         chatId: TELEGRAM_CHAT_ID,
-        text: `⚠️ *Error en Daily Jobs Report:*\n\`\`\`\n${errorMsg.slice(0, 3000)}\n\`\`\``,
+        text: `⚠️ *Error en Daily Jobs Report (${profile.firstName}):*\n\`\`\`\n${errorMsg.slice(0, 3000)}\n\`\`\``,
       });
     } catch (telegramError) {
       console.error("Tampoco se pudo enviar el aviso de error a Telegram:", telegramError);
