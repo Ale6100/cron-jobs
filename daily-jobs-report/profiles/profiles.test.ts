@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import { jsonResponse, mockFetch, silenceConsole } from "../../test-helpers/mockFetch.js";
 import { alejandroProfile, calculateYearsOfExperience } from "./alejandro.js";
+import { alejandroExactasProfile } from "./alejandroExactas.js";
 import { getProfileFromArgs } from "./index.js";
 import { marianaProfile } from "./mariana.js";
 
@@ -38,9 +39,31 @@ describe("marianaProfile", () => {
     assert.match(payFormat.formatPay(600000), /^~\$\s600\.000 ARS\/mes$/);
   });
 
-  it("calcula la edad que usa Gemini a partir del año actual", () => {
+  it("calcula la edad que usa Gemini a partir del año actual", async () => {
     const expectedAge = new Date().getFullYear() - 1995;
-    assert.match(marianaProfile.buildGeminiPromptHeader(), new RegExp(`Edad aproximada: ${expectedAge} años`));
+    const header = marianaProfile.buildGeminiPromptHeader(await marianaProfile.loadPayFormat());
+    assert.match(header, new RegExp(`Edad aproximada: ${expectedAge} años`));
+  });
+});
+
+describe("alejandroExactasProfile", () => {
+  const payFormat = { usdToArsRate: 1500, formatPay: String };
+
+  it("informa a Gemini las materias aprobadas y la carrera que deben pedir las ofertas", () => {
+    const header = alejandroExactasProfile.buildGeminiPromptHeader(payFormat);
+
+    assert.match(header, /Materias aprobadas: CBC completo, Álgebra 1, Introducción a la Programación, Análisis, Sistemas Digitales/);
+    assert.match(header, /ACEPTAR solo si la oferta incluye Ciencias de la Computación/);
+  });
+
+  it("le pasa a Gemini la cotización para convertir sueldos en pesos a USD", () => {
+    assert.match(alejandroExactasProfile.buildGeminiPromptHeader(payFormat), /\$1500 ARS por USD/);
+    assert.match(alejandroExactasProfile.buildGeminiPromptHeader({ formatPay: String }), /no podés convertirlo a USD, devuelve null/);
+  });
+
+  it("no limita la cantidad de ofertas del reporte y recuerda las ya evaluadas", () => {
+    assert.equal(alejandroExactasProfile.maxJobsInReport, Number.POSITIVE_INFINITY);
+    assert.equal(alejandroExactasProfile.seenJobsStateFile, "alejandro-exactas.json");
   });
 });
 

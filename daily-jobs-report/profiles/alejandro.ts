@@ -2,7 +2,7 @@ import { getDolarPrice } from "../services/dolar.js";
 import { fetchGetOnBoardJobs } from "../services/getOnBoard.js";
 import { fetchRemoteOkJobs } from "../services/remoteOk.js";
 import { fetchRemotiveJobs } from "../services/remotive.js";
-import type { JobsReportProfile } from "../types.js";
+import type { JobsReportProfile, PayFormat } from "../types.js";
 
 export interface CandidateProfile {
   name: string;
@@ -92,13 +92,7 @@ export const getCandidateProfile = (): CandidateProfile => {
   };
 };
 
-const buildGeminiPromptHeader = (): string => {
-  const profile = getCandidateProfile();
-
-  return `
-Sos un recruiter técnico experto. Tu objetivo es evaluar las siguientes ofertas de trabajo y determinar cuáles son oportunidades REALMENTE viables y recomendables para el siguiente candidato.
-
-### PERFIL DEL CANDIDATO:
+export const buildCandidateSection = (profile: CandidateProfile): string => `### PERFIL DEL CANDIDATO:
 - Nombre: ${profile.name}
 - Rol: ${profile.role}
 - Idiomas:
@@ -116,29 +110,67 @@ Sos un recruiter técnico experto. Tu objetivo es evaluar las siguientes ofertas
 - Inteligencia Artificial y LLMs: ${profile.technologies.aiAndLlms.join(", ")}
 - Bases de Datos: ${profile.technologies.databases.join(", ")}
 - Experiencias clave: ${profile.highlights.join(" | ")}
-- Términos y seniorities a DESCARTAR: ${profile.avoidKeywords.join(", ")}
+- Términos y seniorities a DESCARTAR: ${profile.avoidKeywords.join(", ")}`;
 
-### CRITERIOS DE EVALUACIÓN:
-1. Tecnologías: Debe coincidir fuertemente con el stack del candidato (React, Next.js, TypeScript, NestJS, Fullstack, Node.js, Python, integración de herramientas con LLMs). Descartar roles de C++, Java clásico, Rust o tecnologías totalmente ajenas salvo que sea un rol frontend agnóstico.
-2. Restricción Estricta de Idioma (Inglés):
+export const LANGUAGE_CRITERION = `Restricción Estricta de Idioma (Inglés):
    - El candidato es nativo en español. Comprende y lee inglés técnico con soltura, pero NO puede mantener conversaciones fluidas en inglés hablado.
    - DESCARTAR de inmediato ofertas que exijan inglés fluido, avanzado o conversacional para reuniones o llamadas (ej: "Fluent English required", "Fluent spoken English", "Strong verbal English", "C1/C2 English").
-   - ACEPTAR ofertas en español, de empresas hispanohablantes/LATAM, o roles donde la comunicación sea asíncrona/escrita o el inglés requerido sea puramente técnico/lectura.
-3. Seniority y Experiencia Dinámica:
+   - ACEPTAR ofertas en español, de empresas hispanohablantes/LATAM, o roles donde la comunicación sea asíncrona/escrita o el inglés requerido sea puramente técnico/lectura.`;
+
+export const buildSeniorityCriterion = (maxAcceptableYearsOfExperience: number): string => `Seniority y Experiencia Dinámica:
    - ACEPTAR vacantes Trainee, Pasante / Intern, Junior y Semi-Senior (Mid-level).
    - DESCARTAR vacantes Senior, Staff, Principal, Lead, Tech Lead, Architect, Director o Manager.
-   - DESCARTAR ofertas que exijan estrictamente más de ${profile.maxAcceptableYearsOfExperience} años de experiencia laboral.
-4. Ubicación y Modalidad:
+   - DESCARTAR ofertas que exijan estrictamente más de ${maxAcceptableYearsOfExperience} años de experiencia laboral.`;
+
+export const LOCATION_CRITERION = `Ubicación y Modalidad:
    - Si la oferta es 100% REMOTA: Es totalmente válida sin importar dónde esté radicada la empresa (CABA, interior o internacional), siempre que admita trabajar desde Argentina (Worldwide, Anywhere, Americas, LATAM o Argentina local).
-   - Si la oferta es PRESENCIAL o HÍBRIDA: Solo válida si la sede física de trabajo es en CABA o alrededores (Buenos Aires, Argentina). Si es híbrida/presencial en otra ciudad o país, descartarla de inmediato.
-5. Cálculo de Pago por Hora en USD (estimatedPay):
+   - Si la oferta es PRESENCIAL o HÍBRIDA: Solo válida si la sede física de trabajo es en CABA o alrededores (Buenos Aires, Argentina). Si es híbrida/presencial en otra ciudad o país, descartarla de inmediato.`;
+
+export const HOURLY_USD_PAY_CRITERION = `Cálculo de Pago por Hora en USD (estimatedPay):
    - Extrae o calcula el valor por hora en USD considerando el régimen horario real de la oferta:
      * Si la oferta da una tarifa horaria explícita (ej: '$25/hr', '$30-40/h'), toma ese valor (o el promedio si es rango).
      * Si la oferta indica salario mensual o anual y su carga horaria semanal (ej: Part-time 20 hs/semana, Fractional 10-15 hs/semana, o Full-time), calcula el valor horario dividiendo el salario por las horas reales trabajadas (mensual / (hs_semanales * 4.33)).
      * Si es Full-time sin horas especificadas, asume la jornada estándar de 40 hs/semana (160 hs/mes).
-     * Si el salario no está especificado o es a convenir, devuelve null.
-6. Score: Del 1 al 10. Solo marcar isMatch = true si el score es >= 7.
+     * Si el salario no está especificado o es a convenir, devuelve null.`;
+
+export const SCORE_CRITERION = "Score: Del 1 al 10. Solo marcar isMatch = true si el score es >= 7.";
+
+export const numberCriteria = (criteria: string[]): string => criteria.map((criterion, index) => `${index + 1}. ${criterion}`).join("\n");
+
+const TECHNOLOGIES_CRITERION = "Tecnologías: Debe coincidir fuertemente con el stack del candidato (React, Next.js, TypeScript, NestJS, Fullstack, Node.js, Python, integración de herramientas con LLMs). Descartar roles de C++, Java clásico, Rust o tecnologías totalmente ajenas salvo que sea un rol frontend agnóstico.";
+
+const buildGeminiPromptHeader = (): string => {
+  const profile = getCandidateProfile();
+
+  return `
+Sos un recruiter técnico experto. Tu objetivo es evaluar las siguientes ofertas de trabajo y determinar cuáles son oportunidades REALMENTE viables y recomendables para el siguiente candidato.
+
+${buildCandidateSection(profile)}
+
+### CRITERIOS DE EVALUACIÓN:
+${numberCriteria([
+  TECHNOLOGIES_CRITERION,
+  LANGUAGE_CRITERION,
+  buildSeniorityCriterion(profile.maxAcceptableYearsOfExperience),
+  LOCATION_CRITERION,
+  HOURLY_USD_PAY_CRITERION,
+  SCORE_CRITERION,
+])}
 `;
+};
+
+export const loadHourlyUsdPayFormat = async (): Promise<PayFormat> => {
+  const dolarRate = await getDolarPrice();
+  console.log(`Cotización Dólar referencia: $${dolarRate} ARS`);
+
+  return {
+    headerNote: `Dólar ref: $${dolarRate}`,
+    usdToArsRate: dolarRate,
+    formatPay: (hourlyUsd) => {
+      const hourlyArs = Math.round(hourlyUsd * dolarRate);
+      return `~$${hourlyUsd} USD/h (*~$${hourlyArs.toLocaleString("es-AR")} ARS/h*)`;
+    },
+  };
 };
 
 export const alejandroProfile: JobsReportProfile = {
@@ -152,16 +184,5 @@ export const alejandroProfile: JobsReportProfile = {
     { name: "Remotive", fetchJobs: fetchRemotiveJobs },
   ],
   buildGeminiPromptHeader,
-  loadPayFormat: async () => {
-    const dolarRate = await getDolarPrice();
-    console.log(`Cotización Dólar referencia: $${dolarRate} ARS`);
-
-    return {
-      headerNote: `Dólar ref: $${dolarRate}`,
-      formatPay: (hourlyUsd) => {
-        const hourlyArs = Math.round(hourlyUsd * dolarRate);
-        return `~$${hourlyUsd} USD/h (*~$${hourlyArs.toLocaleString("es-AR")} ARS/h*)`;
-      },
-    };
-  },
+  loadPayFormat: loadHourlyUsdPayFormat,
 };

@@ -1,9 +1,11 @@
 import type { JobsReportProfile } from "../types.js";
 import { alejandroProfile } from "./alejandro.js";
+import { alejandroExactasProfile } from "./alejandroExactas.js";
 import { marianaProfile } from "./mariana.js";
 
 const PROFILES: Record<string, JobsReportProfile> = {
   alejandro: alejandroProfile,
+  "alejandro-exactas": alejandroExactasProfile,
   mariana: marianaProfile,
 };
 

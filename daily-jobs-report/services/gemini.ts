@@ -10,7 +10,12 @@ export interface JobMatch {
   score: number;
   reason: string;
   estimatedPay?: number | null;
+  closingDate?: string;
 }
+
+export const MAX_JOBS_TO_EVALUATE = 35;
+
+class UnusableGeminiResponseError extends Error {}
 
 interface GeminiEvaluationResponse {
   matches?: Array<{
@@ -123,7 +128,7 @@ export const evaluateJobsWithGemini = async (
   }
 
   // Evaluamos hasta un máximo de 35 ofertas prefiltradas para balancear cobertura, tiempo y tokens
-  const sampleJobs = jobs.slice(0, 35);
+  const sampleJobs = jobs.slice(0, MAX_JOBS_TO_EVALUATE);
 
   const prompt = `
 ${promptHeader}
@@ -223,8 +228,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
 
       const textContent = rawJson.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!textContent) {
-        console.warn("Gemini no retornó contenido en la respuesta.");
-        return [];
+        throw new UnusableGeminiResponseError(`Gemini (${model}) no retornó contenido en la respuesta.`);
       }
 
       try {
@@ -240,26 +244,28 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
             }
             return [{
               id: m.id,
-              title: m.title,
-              company: m.company,
+              title: originalJob.title,
+              company: originalJob.company,
               url: m.url || originalJob.url,
               location: m.location || originalJob.location,
               source: originalJob.source,
               score: m.score,
               reason: m.reason,
               estimatedPay: typeof m.estimatedPay === "number" ? m.estimatedPay : null,
+              ...(originalJob.closingDate ? { closingDate: originalJob.closingDate } : {}),
             }];
           });
 
         return matches;
       } catch (error) {
         console.error("Error al parsear la respuesta JSON de Gemini:", error, textContent);
-        return [];
+        throw new UnusableGeminiResponseError(`Gemini (${model}) devolvió un JSON inválido.`);
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       const delay = RETRY_DELAYS_SEC[attempt];
-      if (delay !== undefined && !lastError.message.includes("Gemini API respondió 4")) {
+      const isRetryable = !(lastError instanceof UnusableGeminiResponseError) && !lastError.message.includes("Gemini API respondió 4");
+      if (delay !== undefined && isRetryable) {
         console.warn(`Error en petición a Gemini (${model}) (intento ${attempt + 1}/${RETRY_DELAYS_SEC.length + 1}): ${lastError.message}. Reintentando en ${delay}s...`);
         await sleep(delay * 1000);
         continue;

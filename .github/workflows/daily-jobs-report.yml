@@ -10,6 +10,7 @@ on:
         options:
           - todos
           - alejandro
+          - alejandro-exactas
           - mariana
   schedule:
     # Todos los días a las 14:00 UTC (11:00 AM hora Argentina)
@@ -23,7 +24,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        profile: ${{ fromJSON((inputs.profile && inputs.profile != 'todos') && format('["{0}"]', inputs.profile) || '["alejandro", "mariana"]') }}
+        profile: ${{ fromJSON((inputs.profile && inputs.profile != 'todos') && format('["{0}"]', inputs.profile) || '["mariana", "alejandro-exactas"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,6 +38,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Restore seen jobs
+        uses: actions/cache/restore@v4
+        with:
+          path: daily-jobs-report/state
+          key: seen-jobs-${{ matrix.profile }}-run-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: seen-jobs-${{ matrix.profile }}-run-
+
       - name: Execute script
         run: node --import tsx daily-jobs-report/index.ts ${{ matrix.profile }}
         env:
@@ -44,3 +52,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_CHAT_ID_MARIANA: ${{ secrets.TELEGRAM_CHAT_ID_MARIANA }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Save seen jobs
+        if: hashFiles('daily-jobs-report/state/**') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: daily-jobs-report/state
+          key: seen-jobs-${{ matrix.profile }}-run-${{ github.run_id }}-${{ github.run_attempt }}

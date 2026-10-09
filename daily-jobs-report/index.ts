@@ -1,5 +1,7 @@
-import { evaluateJobsWithGemini, type JobMatch } from "./services/gemini.js";
+import { evaluateJobsWithGemini, MAX_JOBS_TO_EVALUATE, type JobMatch } from "./services/gemini.js";
+import { splitIntoMessages } from "./message.js";
 import { getProfileFromArgs } from "./profiles/index.js";
+import { computeSeenJobIds, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
 import type { PayFormat } from "./types.js";
 import { sendMessageTelegram } from "../utils/sendMessage.js";
 
@@ -26,13 +28,14 @@ const escapeMarkdown = (text: string): string => text.replace(/([_*`[])/g, "\\$1
 
 const formatJobItem = (job: JobMatch, payFormat: PayFormat): string => {
   const scoreLine = profile.showScore ? `⭐ *Score:* ${job.score}/10\n` : "";
+  const closingDateLine = job.closingDate ? `📅 *Cierre:* ${escapeMarkdown(job.closingDate)}\n` : "";
 
   return `
 💼 *${escapeMarkdown(job.title)}* - *${escapeMarkdown(job.company)}*
 🌐 *Portal:* ${job.source}
 📍 *Ubicación:* ${escapeMarkdown(job.location)}
 ${scoreLine}💵 *Pago estimado:* ${formatSalary(job, payFormat)}
-💡 *Por qué te conviene:* ${escapeMarkdown(job.reason)}
+${closingDateLine}💡 *Por qué te conviene:* ${escapeMarkdown(job.reason)}
 🔗 ${job.url}
 `;
 };
@@ -64,18 +67,35 @@ const main = async () => {
     const allCandidateJobs = jobsBySource.flat();
     console.log(`Total consolidado de ofertas preliminares: ${allCandidateJobs.length}`);
 
-    if (allCandidateJobs.length === 0) {
-      console.log("No se encontraron ofertas preliminares en ninguna fuente para evaluar.");
+    const { seenJobsStateFile } = profile;
+    const seenJobIds = seenJobsStateFile ? await loadSeenJobIds(seenJobsStateFile) : new Set<string>();
+    const jobsToEvaluate = allCandidateJobs.filter((job) => !seenJobIds.has(String(job.id))).slice(0, MAX_JOBS_TO_EVALUATE);
+
+    const rememberEvaluatedJobs = async () => {
+      if (!seenJobsStateFile) return;
+      const evaluatedIds = new Set(jobsToEvaluate.map((job) => String(job.id)));
+      const allSourcesResponded = settledSources.every((result) => result.status === "fulfilled");
+      await saveSeenJobIds(seenJobsStateFile, computeSeenJobIds(allCandidateJobs, seenJobIds, evaluatedIds, allSourcesResponded));
+    };
+
+    if (seenJobsStateFile) {
+      console.log(`Ofertas nuevas (no evaluadas en corridas anteriores): ${jobsToEvaluate.length}`);
+    }
+
+    if (jobsToEvaluate.length === 0) {
+      console.log("No hay ofertas para evaluar.");
+      await rememberEvaluatedJobs();
       return;
     }
 
     console.log("Evaluando ofertas con Gemini AI según perfil e ingresos...");
-    const matchedJobs = await evaluateJobsWithGemini(allCandidateJobs, profile.buildGeminiPromptHeader(), GEMINI_API_KEY);
+    const matchedJobs = await evaluateJobsWithGemini(jobsToEvaluate, profile.buildGeminiPromptHeader(payFormat), GEMINI_API_KEY);
 
     console.log(`Gemini seleccionó ${matchedJobs.length} ofertas afines.`);
 
     if (matchedJobs.length === 0) {
       console.log("Ninguna oferta alcanzó el umbral de afinidad requerido (score >= 7). No se envía mensaje.");
+      await rememberEvaluatedJobs();
       return;
     }
 
@@ -93,18 +113,18 @@ const main = async () => {
 
     const SEPARADOR = "\n━━━━━━━━━━━━━━━━\n";
     const headerNote = payFormat.headerNote ? ` (${payFormat.headerNote})` : "";
-    let messageText = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para ${profile.firstName}${headerNote}_\n`;
+    const header = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para ${profile.firstName}${headerNote}_\n`;
+    const jobItems = matchedJobs.slice(0, profile.maxJobsInReport).map((job) => `${SEPARADOR}${formatJobItem(job, payFormat)}`);
 
-    matchedJobs.slice(0, profile.maxJobsInReport).forEach((job) => {
-      messageText += `${SEPARADOR}${formatJobItem(job, payFormat)}`;
-    });
-
-    await sendMessageTelegram({
-      token: TELEGRAM_BOT_TOKEN,
-      chatId: REPORT_CHAT_ID,
-      text: messageText,
-    });
+    for (const text of splitIntoMessages(header, jobItems)) {
+      await sendMessageTelegram({
+        token: TELEGRAM_BOT_TOKEN,
+        chatId: REPORT_CHAT_ID,
+        text,
+      });
+    }
     console.log("Mensaje con ofertas enviado exitosamente a Telegram.");
+    await rememberEvaluatedJobs();
   } catch (error) {
     console.error(`Error en Daily Jobs Report (${profile.firstName}):`, error);
     try {

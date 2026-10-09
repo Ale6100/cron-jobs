@@ -164,6 +164,26 @@ describe("evaluateJobsWithGemini", () => {
     assert.match(String(init?.body), /CRITERIOS DEL PERFIL/);
   });
 
+  it("muestra el título y la empresa de la oferta original aunque Gemini los reescriba", async () => {
+    process.env.GEMINI_MODEL = "gemini-test";
+    mockFetch(() => geminiResponse([buildMatch("a", { title: "Otro título", company: "Otra empresa" })]));
+
+    const [match] = await evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key");
+
+    assert.deepEqual([match?.title, match?.company], ["Puesto a", "Empresa"]);
+  });
+
+  it("conserva la fecha de cierre de la oferta original", async () => {
+    process.env.GEMINI_MODEL = "gemini-test";
+    mockFetch(() => geminiResponse([buildMatch("a"), buildMatch("b")]));
+
+    const jobs = [{ ...buildCleanJob("a"), closingDate: "28/10/26" }, buildCleanJob("b")];
+    const matches = await evaluateJobsWithGemini(jobs, "criterios", "key");
+
+    assert.deepEqual(matches.map((match) => match.closingDate), ["28/10/26", undefined]);
+    assert.equal("closingDate" in (matches[1] ?? {}), false);
+  });
+
   it("pasa al siguiente modelo si uno no tiene cuota o no existe", async () => {
     const requestedModels: string[] = [];
     mockFetch((url) => {
@@ -201,16 +221,35 @@ describe("evaluateJobsWithGemini", () => {
     assert.doesNotMatch(prompt, /\\"id\\": 35,/);
   });
 
-  it("devuelve una lista vacía si Gemini responde sin contenido o con JSON inválido", async () => {
+  it("falla sin reintentar el mismo modelo si Gemini responde sin contenido o con JSON inválido", async () => {
     process.env.GEMINI_MODEL = "gemini-test";
 
-    mockFetch(() => jsonResponse({ candidates: [] }));
-    assert.deepEqual(await evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key"), []);
+    const emptyFetch = mockFetch(() => jsonResponse({ candidates: [] }));
+    await assert.rejects(evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key"), /no retornó contenido/);
+    assert.equal(emptyFetch.mock.callCount(), 1);
 
     mock.restoreAll();
     silenceConsole();
     mockFetch(() => jsonResponse({ candidates: [{ content: { parts: [{ text: "no es json" }] } }] }));
-    assert.deepEqual(await evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key"), []);
+    await assert.rejects(evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key"), /JSON inválido/);
+  });
+
+  it("pasa al siguiente modelo si uno devuelve una respuesta inutilizable", async () => {
+    mockFetch((url) => {
+      if (!url.includes(":generateContent")) {
+        return jsonResponse({
+          models: ["gemini-3.8-flash", "gemini-3.7-flash"].map((name) => ({
+            name: `models/${name}`,
+            supportedGenerationMethods: ["generateContent"],
+          })),
+        });
+      }
+      return url.includes("gemini-3.8-flash") ? jsonResponse({ candidates: [] }) : geminiResponse([buildMatch("a")]);
+    });
+
+    const matches = await evaluateJobsWithGemini([buildCleanJob("a")], "criterios", "key");
+
+    assert.deepEqual(matches.map((match) => match.id), ["a"]);
   });
 
   it("falla con el último error si ningún modelo responde", async () => {
