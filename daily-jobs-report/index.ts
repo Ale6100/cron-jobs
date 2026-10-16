@@ -1,7 +1,7 @@
 import { evaluateJobsWithGemini, MAX_JOBS_TO_EVALUATE, type JobMatch } from "./services/gemini.js";
 import { splitIntoMessages } from "./message.js";
 import { getProfileFromArgs } from "./profiles/index.js";
-import { computeSeenJobIds, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
+import { computeSeenJobIds, consolidateCandidateJobs, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
 import type { PayFormat } from "./types.js";
 import { sendMessageTelegram } from "../utils/sendMessage.js";
 
@@ -64,7 +64,7 @@ const main = async () => {
 
     console.log(`Ofertas preliminares: ${profile.sources.map((source, index) => `${source.name} (${jobsBySource[index]?.length ?? 0})`).join(", ")}`);
 
-    const allCandidateJobs = jobsBySource.flat();
+    const allCandidateJobs = consolidateCandidateJobs(jobsBySource);
     console.log(`Total consolidado de ofertas preliminares: ${allCandidateJobs.length}`);
 
     const { seenJobsStateFile } = profile;

@@ -16,7 +16,7 @@ const BASE_URL = "https://ar.computrabajo.com";
 
 const LOCATION_SLUG = "capital-federal";
 
-const MAX_JOBS = 15;
+const MAX_JOBS = 10;
 
 const REQUEST_HEADERS = {
   "User-Agent": "Mozilla/5.0 (compatible; CronJobsBot/1.0; +https://github.com/Ale6100/cron-jobs)",

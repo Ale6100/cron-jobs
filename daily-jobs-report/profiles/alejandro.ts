@@ -1,8 +1,16 @@
 import { getDolarPrice } from "../services/dolar.js";
+import { fetchFreehireJobs } from "../services/freehire.js";
 import { fetchGetOnBoardJobs } from "../services/getOnBoard.js";
+import { fetchLinkedInJobs, type LinkedInSearchQuery } from "../services/linkedin.js";
 import { fetchRemoteOkJobs } from "../services/remoteOk.js";
 import { fetchRemotiveJobs } from "../services/remotive.js";
 import type { JobsReportProfile, PayFormat } from "../types.js";
+
+const LINKEDIN_QUERIES: LinkedInSearchQuery[] = [
+  { keywords: "frontend OR react OR next.js", location: "Argentina", remote: true },
+  { keywords: "full stack OR typescript OR node.js", location: "Argentina", remote: true },
+  { keywords: "frontend OR full stack OR react", location: "Buenos Aires, Provincia de Buenos Aires, Argentina" },
+];
 
 export interface CandidateProfile {
   name: string;
@@ -182,6 +190,14 @@ export const alejandroProfile: JobsReportProfile = {
     { name: "Get on Board", fetchJobs: fetchGetOnBoardJobs },
     { name: "RemoteOK", fetchJobs: fetchRemoteOkJobs },
     { name: "Remotive", fetchJobs: fetchRemotiveJobs },
+    { name: "FreeHire", fetchJobs: fetchFreehireJobs },
+    {
+      name: "LinkedIn",
+      fetchJobs: () =>
+        fetchLinkedInJobs(LINKEDIN_QUERIES, {
+          filterCard: (card) => !/\b(senior|sr\.?|lead|staff|principal|architect|director|manager)\b/i.test(card.title),
+        }),
+    },
   ],
   buildGeminiPromptHeader,
   loadPayFormat: loadHourlyUsdPayFormat,

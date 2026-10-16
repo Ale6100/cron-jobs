@@ -4,18 +4,19 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { computeSeenJobIds, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
+import { computeSeenJobIds, consolidateCandidateJobs, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
 import type { CleanJob } from "./types.js";
 
-const buildJob = (id: string): CleanJob => ({
+const buildJob = (id: string, overrides: Partial<CleanJob> = {}): CleanJob => ({
   id,
   title: `Puesto ${id}`,
-  company: "Empresa",
+  company: "Supermercado Coto",
   location: "CABA",
-  url: "https://example.com",
+  url: `https://example.com/${id}`,
   source: "Exactas UBA",
   tags: [],
   snippet: "",
+  ...overrides,
 });
 
 describe("loadSeenJobIds / saveSeenJobIds", () => {
@@ -68,5 +69,52 @@ describe("computeSeenJobIds", () => {
   it("no olvida ninguna si alguna fuente no respondió", () => {
     const ids = computeSeenJobIds(listedJobs, new Set(["a", "de-fuente-caida"]), new Set(["b"]), false);
     assert.deepEqual(ids.sort(), ["a", "b", "de-fuente-caida"]);
+  });
+});
+
+describe("consolidateCandidateJobs", () => {
+  it("intercala las fuentes en orden round-robin y elimina duplicados por id o empresa+título", () => {
+    const sourceA = [
+      buildJob("bumeran-1", { company: "Farmacity S.A.", title: "Cajero/a de Sucursal" }),
+      buildJob("bumeran-2", { company: "Coto", title: "Repositor" }),
+    ];
+    const sourceB = [
+      buildJob("computrabajo-1", { company: "farmacity sa", title: "Cajero a de sucursal!" }),
+      buildJob("computrabajo-2", { company: "Zara", title: "Vendedora" }),
+    ];
+    const sourceC = [
+      buildJob("bumeran-1", { company: "Otra", title: "Otro" }),
+      buildJob("linkedin-2", { company: "Havanna", title: "Atención al cliente" }),
+    ];
+
+    const consolidated = consolidateCandidateJobs([sourceA, sourceB, sourceC]);
+
+    assert.deepEqual(consolidated.map((job) => job.id), [
+      "bumeran-1",
+      "bumeran-2",
+      "computrabajo-2",
+      "linkedin-2",
+    ]);
+  });
+
+  it("no fusiona avisos cuando la empresa es genérica o confidencial ni cuando comparten una URL de listado como Exactas UBA", () => {
+    const sharedUrl = "https://exactas.uba.ar/ofertas-de-trabajo-profesional/ofertas-activas-estudiantes/";
+    const sourceA = [
+      buildJob("exactas-101/26", { company: "Empresa no especificada", title: "Desarrollador", url: sharedUrl }),
+      buildJob("exactas-102/26", { company: "Empresa no especificada", title: "Desarrollador", url: sharedUrl }),
+    ];
+    const sourceB = [
+      buildJob("bumeran-1", { company: "Empresa confidencial", title: "Cajera" }),
+      buildJob("computrabajo-1", { company: "Empresa confidencial", title: "Cajera" }),
+    ];
+
+    const consolidated = consolidateCandidateJobs([sourceA, sourceB]);
+
+    assert.deepEqual(consolidated.map((job) => job.id), [
+      "exactas-101/26",
+      "bumeran-1",
+      "exactas-102/26",
+      "computrabajo-1",
+    ]);
   });
 });

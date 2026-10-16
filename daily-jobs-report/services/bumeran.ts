@@ -12,7 +12,7 @@ interface BumeranJobItem {
   modalidadTrabajo?: string;
 }
 
-const MAX_JOBS = 20;
+const MAX_JOBS = 15;
 
 const stripHtml = (html: string): string => {
   return html

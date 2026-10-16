@@ -31,24 +31,32 @@ describe("alejandroProfile", () => {
   beforeEach(silenceConsole);
   afterEach(() => mock.restoreAll());
 
-  it("muestra el pago por hora en USD con su equivalente en ARS según el dólar del día", async () => {
+  it("muestra el pago por hora en USD con su equivalente en ARS según el dólar del día e incluye las 5 fuentes", async () => {
     mockFetch(() => jsonResponse({ venta: 1000 }));
 
     const payFormat = await alejandroProfile.loadPayFormat();
 
     assert.equal(payFormat.headerNote, "Dólar ref: $1000");
     assert.equal(payFormat.formatPay(25), "~$25 USD/h (*~$25.000 ARS/h*)");
+    assert.deepEqual(
+      alejandroProfile.sources.map((source) => source.name),
+      ["Get on Board", "RemoteOK", "Remotive", "FreeHire", "LinkedIn"]
+    );
   });
 });
 
 describe("marianaProfile", () => {
-  it("muestra el pago como sueldo mensual en ARS, sin nota en el encabezado, y envía hasta 4 ofertas", async () => {
+  it("muestra el pago como sueldo mensual en ARS, sin nota en el encabezado, consulta 3 fuentes y envía hasta 4 ofertas", async () => {
     const payFormat = await marianaProfile.loadPayFormat();
 
     assert.equal(payFormat.headerNote, undefined);
     assert.match(payFormat.formatPay(600000), /^~\$\s600\.000 ARS\/mes$/);
     assert.equal(marianaProfile.maxJobsInReport, 4);
     assert.equal(marianaProfile.seenJobsStateFile, undefined);
+    assert.deepEqual(
+      marianaProfile.sources.map((source) => source.name),
+      ["Bumeran", "Computrabajo", "LinkedIn"]
+    );
   });
 
   it("calcula la edad que usa Gemini a partir del año actual e informa que cuenta con CUD por disminución visual", async () => {
@@ -61,7 +69,7 @@ describe("marianaProfile", () => {
 });
 
 describe("stefyProfile", () => {
-  it("muestra el pago como sueldo mensual en ARS, envía hasta 3 ofertas y no persiste estado de vistas", async () => {
+  it("muestra el pago como sueldo mensual en ARS, consulta 3 fuentes, envía hasta 3 ofertas y no persiste estado de vistas", async () => {
     const payFormat = await stefyProfile.loadPayFormat();
 
     assert.equal(stefyProfile.telegramChatIdEnvVar, "TELEGRAM_CHAT_ID_STEFY_BUSQUEDA_TRABAJO");
@@ -69,6 +77,10 @@ describe("stefyProfile", () => {
     assert.match(payFormat.formatPay(750000), /^~\$\s750\.000 ARS\/mes$/);
     assert.equal(stefyProfile.maxJobsInReport, 3);
     assert.equal(stefyProfile.seenJobsStateFile, undefined);
+    assert.deepEqual(
+      stefyProfile.sources.map((source) => source.name),
+      ["Bumeran", "Computrabajo", "LinkedIn"]
+    );
   });
 
   it("incluye en el prompt su edad actual, que su experiencia fue informal y los rubros de su CV", async () => {

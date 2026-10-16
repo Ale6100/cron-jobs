@@ -1,9 +1,11 @@
 import { formatPrice } from "../../utils/util.js";
 import { fetchBumeranJobs } from "../services/bumeran.js";
 import { fetchComputrabajoJobs } from "../services/computrabajo.js";
+import { fetchLinkedInJobs, type LinkedInSearchQuery } from "../services/linkedin.js";
 import type { JobsReportProfile } from "../types.js";
 
 export const BIRTH_DATE = new Date(1996, 9, 25);
+const LINKEDIN_LOCATION = "Buenos Aires, Provincia de Buenos Aires, Argentina";
 
 const BUMERAN_QUERIES = [
   "vendedora",
@@ -27,6 +29,13 @@ const COMPUTRABAJO_SLUGS = [
   "ninera",
   "cuidado-de-adultos-mayores",
   "manicura",
+];
+
+const LINKEDIN_QUERIES: LinkedInSearchQuery[] = [
+  { keywords: "vendedora OR cajera OR repositora", location: LINKEDIN_LOCATION },
+  { keywords: "atención al cliente OR promotora", location: LINKEDIN_LOCATION },
+  { keywords: "ayudante de cocina OR eventos", location: LINKEDIN_LOCATION },
+  { keywords: "niñera OR cuidado de adultos mayores OR manicura", location: LINKEDIN_LOCATION },
 ];
 
 export const calculateAge = (now = new Date()): number => {
@@ -96,6 +105,7 @@ export const stefyProfile: JobsReportProfile = {
   sources: [
     { name: "Bumeran", fetchJobs: () => fetchBumeranJobs(BUMERAN_QUERIES) },
     { name: "Computrabajo", fetchJobs: () => fetchComputrabajoJobs(COMPUTRABAJO_SLUGS) },
+    { name: "LinkedIn", fetchJobs: () => fetchLinkedInJobs(LINKEDIN_QUERIES) },
   ],
   buildGeminiPromptHeader,
   loadPayFormat: () => Promise.resolve({

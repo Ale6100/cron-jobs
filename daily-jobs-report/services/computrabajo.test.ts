@@ -47,13 +47,13 @@ describe("extractOfferPaths", () => {
 });
 
 describe("pickPathsAcrossSearches", () => {
-  it("alterna entre búsquedas, elimina duplicados y respeta el tope de 15", () => {
+  it("alterna entre búsquedas, elimina duplicados y respeta el tope de 10", () => {
     const cajeraPaths = Array.from({ length: 20 }, (_, index) => `/cajera-${index}`);
     const vendedoraPaths = ["/cajera-0", ...Array.from({ length: 19 }, (_, index) => `/vendedora-${index}`)];
 
     const paths = pickPathsAcrossSearches([cajeraPaths, vendedoraPaths]);
 
-    assert.equal(paths.length, 15);
+    assert.equal(paths.length, 10);
     assert.deepEqual(paths.slice(0, 3), ["/cajera-0", "/cajera-1", "/vendedora-0"]);
   });
 });

@@ -1,4 +1,4 @@
-export type JobSource = "Get on Board" | "RemoteOK" | "Remotive" | "Bumeran" | "Computrabajo" | "Exactas UBA";
+export type JobSource = "Get on Board" | "RemoteOK" | "Remotive" | "FreeHire" | "LinkedIn" | "Bumeran" | "Computrabajo" | "Exactas UBA";
 
 export interface CleanJob {
   id: string | number;

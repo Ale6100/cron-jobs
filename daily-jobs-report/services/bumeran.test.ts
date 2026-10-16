@@ -57,14 +57,14 @@ describe("pickJobsAcrossQueries", () => {
     assert.deepEqual(jobs.map((job) => job.id), ["bumeran-2", "bumeran-3"]);
   });
 
-  it("alterna entre búsquedas, elimina duplicados y respeta el tope de 20", () => {
+  it("alterna entre búsquedas, elimina duplicados y respeta el tope de 15", () => {
     const cajeraResults = Array.from({ length: 20 }, (_, index) => buildJob(100 + index));
     const vendedoraResults = [buildJob(100), ...Array.from({ length: 19 }, (_, index) => buildJob(200 + index))];
 
     const jobs = pickJobsAcrossQueries([cajeraResults, vendedoraResults]);
 
-    assert.equal(jobs.length, 20);
-    assert.equal(new Set(jobs.map((job) => job.id)).size, 20);
+    assert.equal(jobs.length, 15);
+    assert.equal(new Set(jobs.map((job) => job.id)).size, 15);
     assert.deepEqual(jobs.slice(0, 3).map((job) => job.id), ["bumeran-100", "bumeran-101", "bumeran-200"]);
   });
 });

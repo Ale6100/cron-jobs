@@ -1,4 +1,5 @@
 import { getProfileFromArgs } from "./profiles/index.js";
+import { consolidateCandidateJobs } from "./seenJobs.js";
 
 const profile = getProfileFromArgs();
 
@@ -14,8 +15,8 @@ const runTest = async () => {
     console.log(`- ${source.name}: ${jobsBySource[index]?.length ?? 0} ofertas prefiltradas`);
   });
 
-  const all = jobsBySource.flat();
-  console.log(`\nTotal consolidado: ${all.length} ofertas preliminares.`);
+  const all = consolidateCandidateJobs(jobsBySource);
+  console.log(`\nTotal consolidado (sin duplicados): ${all.length} ofertas preliminares.`);
 
   if (all.length > 0) {
     console.log("\nMuestra de las primeras 5 ofertas consolidadas:");
