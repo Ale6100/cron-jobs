@@ -5,6 +5,7 @@ import { alejandroProfile, calculateYearsOfExperience } from "./alejandro.js";
 import { alejandroExactasProfile } from "./alejandroExactas.js";
 import { getProfileFromArgs } from "./index.js";
 import { marianaProfile } from "./mariana.js";
+import { calculateAge, stefyProfile } from "./stefy.js";
 
 describe("calculateYearsOfExperience", () => {
   it("cuenta años completos desde el inicio de carrera", () => {
@@ -14,6 +15,15 @@ describe("calculateYearsOfExperience", () => {
 
   it("nunca devuelve menos de 1 año", () => {
     assert.equal(calculateYearsOfExperience(new Date(2023, 8, 1)), 1);
+  });
+});
+
+describe("calculateAge", () => {
+  it("calcula los años cumplidos según si ya pasó o no el 25 de octubre", () => {
+    assert.equal(calculateAge(new Date(2026, 9, 24)), 29);
+    assert.equal(calculateAge(new Date(2026, 9, 25)), 30);
+    assert.equal(calculateAge(new Date(2026, 11, 1)), 30);
+    assert.equal(calculateAge(new Date(2026, 0, 15)), 29);
   });
 });
 
@@ -32,17 +42,43 @@ describe("alejandroProfile", () => {
 });
 
 describe("marianaProfile", () => {
-  it("muestra el pago como sueldo mensual en ARS, sin nota en el encabezado", async () => {
+  it("muestra el pago como sueldo mensual en ARS, sin nota en el encabezado, y envía hasta 4 ofertas", async () => {
     const payFormat = await marianaProfile.loadPayFormat();
 
     assert.equal(payFormat.headerNote, undefined);
     assert.match(payFormat.formatPay(600000), /^~\$\s600\.000 ARS\/mes$/);
+    assert.equal(marianaProfile.maxJobsInReport, 4);
+    assert.equal(marianaProfile.seenJobsStateFile, undefined);
   });
 
-  it("calcula la edad que usa Gemini a partir del año actual", async () => {
+  it("calcula la edad que usa Gemini a partir del año actual e informa que cuenta con CUD por disminución visual", async () => {
     const expectedAge = new Date().getFullYear() - 1995;
     const header = marianaProfile.buildGeminiPromptHeader(await marianaProfile.loadPayFormat());
     assert.match(header, new RegExp(`Edad aproximada: ${expectedAge} años`));
+    assert.match(header, /CUD \(Certificado Único de Discapacidad\) vigente por disminución visual/);
+    assert.match(header, /Vacantes inclusivas \/ con CUD/);
+  });
+});
+
+describe("stefyProfile", () => {
+  it("muestra el pago como sueldo mensual en ARS, envía hasta 4 ofertas y no persiste estado de vistas", async () => {
+    const payFormat = await stefyProfile.loadPayFormat();
+
+    assert.equal(stefyProfile.telegramChatIdEnvVar, "TELEGRAM_CHAT_ID_STEFY_BUSQUEDA_TRABAJO");
+    assert.equal(payFormat.headerNote, undefined);
+    assert.match(payFormat.formatPay(750000), /^~\$\s750\.000 ARS\/mes$/);
+    assert.equal(stefyProfile.maxJobsInReport, 4);
+    assert.equal(stefyProfile.seenJobsStateFile, undefined);
+  });
+
+  it("incluye en el prompt su edad actual, que su experiencia fue informal y los rubros de su CV", async () => {
+    const expectedAge = calculateAge();
+    const header = stefyProfile.buildGeminiPromptHeader(await stefyProfile.loadPayFormat());
+
+    assert.match(header, new RegExp(`Edad: ${expectedAge} años`));
+    assert.match(header, /informales \/ no registrados en blanco/);
+    assert.match(header, /indumentaria/);
+    assert.match(header, /manicuría/);
   });
 });
 
@@ -79,6 +115,9 @@ describe("getProfileFromArgs", () => {
   it("devuelve el perfil indicado por argumento", () => {
     process.argv = ["node", "index.ts", "mariana"];
     assert.equal(getProfileFromArgs(), marianaProfile);
+
+    process.argv = ["node", "index.ts", "stefy"];
+    assert.equal(getProfileFromArgs(), stefyProfile);
   });
 
   it("termina el proceso si el perfil no existe", () => {

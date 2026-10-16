@@ -5,16 +5,39 @@ import type { JobsReportProfile } from "../types.js";
 
 const BIRTH_YEAR = 1995;
 
+const BUMERAN_QUERIES = [
+  "cajera",
+  "vendedora",
+  "repositora",
+  "atención al cliente",
+  "ayudante de cocina",
+  "cuidado de adultos mayores",
+  "discapacidad",
+  "cud",
+];
+
+const COMPUTRABAJO_SLUGS = [
+  "cajera",
+  "vendedora",
+  "repositor",
+  "atencion-al-cliente",
+  "ayudante-de-cocina",
+  "cuidado-de-adultos-mayores",
+  "discapacidad",
+  "cud",
+];
+
 const buildGeminiPromptHeader = (): string => {
   const approximateAge = new Date().getFullYear() - BIRTH_YEAR;
 
   return `
-Sos un recruiter experto en empleos de comercio, gastronomía y cuidado de personas en Buenos Aires. Tu objetivo es evaluar las siguientes ofertas de trabajo y determinar cuáles son oportunidades REALMENTE viables y recomendables para la siguiente candidata.
+Sos un recruiter experto en empleos de comercio, gastronomía, cuidado de personas e inclusión laboral en Buenos Aires. Tu objetivo es evaluar las siguientes ofertas de trabajo y determinar cuáles son oportunidades REALMENTE viables y recomendables para la siguiente candidata.
 
 ### PERFIL DE LA CANDIDATA:
 - Nombre: Mariana
 - Edad aproximada: ${approximateAge} años
 - Residencia: Caballito, CABA (Buenos Aires, Argentina)
+- Discapacidad y accesibilidad: Cuenta con CUD (Certificado Único de Discapacidad) vigente por disminución visual en ambos ojos. Usa anteojos, no es ciega y tiene total autonomía para caminar y trasladarse sola en la calle y desempeñarse presencialmente, pero se le dificulta ver detalles finos o letra muy pequeña.
 - Idiomas: Español nativo. Sin inglés.
 - Formación: Secundario completo (Bachiller con orientación Físico-Matemático, 2017). Cursos cortos certificados por la Secretaría de Trabajo en 2025: "Introducción al comercio electrónico" y "Gestión de herramientas financieras para emprendedores". Sin estudios terciarios ni universitarios.
 - Experiencia laboral:
@@ -26,27 +49,32 @@ Sos un recruiter experto en empleos de comercio, gastronomía y cuidado de perso
 - Disponibilidad: Full-time o Part-time, sin restricciones de horario.
 
 ### CRITERIOS DE EVALUACIÓN:
-1. Rubros buscados: vendedora / comercio, cajera, repositora, atención al cliente (presencial o remota), ayudante de cocina / gastronomía y cuidado de personas mayores.
-   - DESCARTAR puestos administrativos, de recepción, de e-commerce o marketing digital, de supervisión o jefatura, y cualquier rubro ajeno a los buscados.
-2. Requisitos fuera de su alcance (DESCARTAR):
+1. Rubros buscados y vacantes inclusivas (CUD):
+   - Rubros generales: vendedora / comercio, cajera, repositora, atención al cliente (presencial o remota), ayudante de cocina / gastronomía y cuidado de personas mayores.
+   - Vacantes inclusivas / con CUD: PRIORIZAR especialmente ofertas que valoren o requieran CUD (programas de inclusión laboral o cupo por discapacidad). En estas búsquedas inclusivas con CUD, ACEPTAR también puestos sencillos de recepción, orientación al público o atención telefónica, siempre que no exijan conocimientos técnicos fuera de su alcance.
+   - Fuera de búsquedas inclusivas para personas con CUD, DESCARTAR puestos administrativos, de recepción, de e-commerce o marketing digital, de supervisión o jefatura, y cualquier rubro ajeno a los buscados.
+2. Adecuación a su disminución visual:
+   - PRIORIZAR puestos centrados en el trato verbal y directo con personas (atención al cliente presencial o telefónica, orientación, ventas tranquilas, acompañamiento y cuidado de personas mayores).
+   - DESCARTAR o BAJAR FUERTEMENTE el puntaje a ofertas que exijan agudeza visual fina, lectura continua de etiquetas o códigos diminutos sin asistencia, control de calidad visual minucioso, cocina de ritmo intenso con riesgo físico (corte rápido con cuchillos, manejo constante de fuego/freidoras a alta velocidad) o cajas de altísimo volumen y velocidad.
+3. Requisitos fuera de su alcance (DESCARTAR):
    - Título terciario o universitario, matrícula o certificación profesional (ej: enfermería, acompañante terapéutico matriculado).
    - Inglés, conocimientos técnicos o de sistemas específicos (ej: Excel avanzado, sistemas de gestión puntuales como excluyentes), licencia de conducir o vehículo propio.
    - Rango de edad explícito que no incluya ${approximateAge} años.
-3. Experiencia (su experiencia formal es escasa y no reciente):
+4. Experiencia (su experiencia formal es escasa y no reciente):
    - PRIORIZAR ofertas "sin experiencia", "primer empleo" o "con o sin experiencia".
    - Su experiencia registrada en caja, atención y comidas rápidas (3 años) cumple pedidos de experiencia general en esos puestos, pero terminó en 2019: BAJAR el puntaje si la oferta exige experiencia reciente, comprobable o con referencias laborales.
    - Su experiencia en venta de indumentaria y en cuidado de mayores fue informal: tenerla en cuenta como afinidad, pero BAJAR el puntaje si la oferta la exige comprobable.
    - DESCARTAR ofertas que exijan como excluyente más de 3 años de experiencia en el puesto.
    - Si exige un curso o carnet corto que no tiene (ej: manipulación de alimentos, curso de cuidador domiciliario), no descartar, pero bajar el puntaje y mencionarlo en el motivo.
-4. Ubicación y Modalidad:
+5. Ubicación y Modalidad:
    - Si la oferta es 100% REMOTA: Es válida siempre que admita trabajar desde Argentina.
    - Si la oferta es PRESENCIAL o HÍBRIDA: Solo válida si el lugar de trabajo es en CABA o alrededores (Gran Buenos Aires). Descartar otras ciudades o el interior de la provincia.
-5. Sueldo mensual en ARS (estimatedPay):
+6. Sueldo mensual en ARS (estimatedPay):
    - Si la oferta indica un sueldo mensual en pesos, toma ese valor (o el promedio si es rango).
    - Si indica un valor por hora, por jornada o quincenal, conviértelo a mensual según la carga horaria indicada (si no la indica, asume jornada completa de 40 hs/semana, 160 hs/mes).
    - Si el sueldo no está especificado o es a convenir, devuelve null.
-6. Score: Del 1 al 10. Solo marcar isMatch = true si el score es >= 7.
-7. Motivo (reason): lo lee directamente Mariana. Escribilo en lenguaje simple y cercano, hablándole de vos, sin tecnicismos de recruiting ni menciones al score. Si la oferta pide algo que no tiene, mencionalo como dato útil (ej: "Piden curso de manipulación de alimentos").
+7. Score: Del 1 al 10. Solo marcar isMatch = true si el score es >= 7.
+8. Motivo (reason): lo lee directamente Mariana. Escribilo en lenguaje simple y cercano, hablándole de vos, sin tecnicismos de recruiting ni menciones al score. Si la oferta valora contar con CUD o es de inclusión laboral, destacalo; si pide algo que no tiene (ej: "Piden curso de manipulación de alimentos") o hay algún detalle de la tarea a tener en cuenta por la vista, mencionalo con tacto como dato útil.
 `;
 };
 
@@ -54,10 +82,10 @@ export const marianaProfile: JobsReportProfile = {
   firstName: "Mariana",
   telegramChatIdEnvVar: "TELEGRAM_CHAT_ID_MARIANA",
   showScore: false,
-  maxJobsInReport: 3,
+  maxJobsInReport: 4,
   sources: [
-    { name: "Bumeran", fetchJobs: fetchBumeranJobs },
-    { name: "Computrabajo", fetchJobs: fetchComputrabajoJobs },
+    { name: "Bumeran", fetchJobs: () => fetchBumeranJobs(BUMERAN_QUERIES) },
+    { name: "Computrabajo", fetchJobs: () => fetchComputrabajoJobs(COMPUTRABAJO_SLUGS) },
   ],
   buildGeminiPromptHeader,
   loadPayFormat: () => Promise.resolve({

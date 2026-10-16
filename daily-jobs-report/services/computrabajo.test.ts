@@ -89,8 +89,10 @@ describe("fetchComputrabajoJobs", () => {
   beforeEach(silenceConsole);
   afterEach(() => mock.restoreAll());
 
-  it("lee los listados y luego el detalle de cada oferta", async () => {
+  it("lee los listados de las búsquedas indicadas y luego el detalle de cada oferta", async () => {
+    const requestedUrls: string[] = [];
     mockFetch((url) => {
+      requestedUrls.push(url);
       if (url.includes("/trabajo-de-cajera-")) {
         return htmlResponse(buildListingHtml([OFFER_PATH]));
       }
@@ -100,9 +102,14 @@ describe("fetchComputrabajoJobs", () => {
       return htmlResponse(buildDetailHtml(buildJobPosting()));
     });
 
-    const jobs = await fetchComputrabajoJobs();
+    const jobs = await fetchComputrabajoJobs(["cajera", "manicura"]);
 
     assert.deepEqual(jobs.map((job) => job.url), [OFFER_URL]);
+    assert.deepEqual(requestedUrls, [
+      "https://ar.computrabajo.com/trabajo-de-cajera-en-capital-federal",
+      "https://ar.computrabajo.com/trabajo-de-manicura-en-capital-federal",
+      OFFER_URL,
+    ]);
   });
 
   it("omite las ofertas cuyo detalle no se pudo leer", async () => {
@@ -113,18 +120,18 @@ describe("fetchComputrabajoJobs", () => {
       return htmlResponse(buildDetailHtml(buildJobPosting()));
     });
 
-    const jobs = await fetchComputrabajoJobs();
+    const jobs = await fetchComputrabajoJobs(["cajera"]);
 
     assert.deepEqual(jobs.map((job) => job.url), [OFFER_URL]);
   });
 
   it("falla si todas las búsquedas fallan", async () => {
     mockFetch(() => htmlResponse("error", 403));
-    await assert.rejects(fetchComputrabajoJobs(), /Fallaron todas las búsquedas en Computrabajo/);
+    await assert.rejects(fetchComputrabajoJobs(["cajera", "vendedora"]), /Fallaron todas las búsquedas en Computrabajo/);
   });
 
   it("falla si hay ofertas pero ninguna se puede interpretar", async () => {
     mockFetch((url) => htmlResponse(url.includes("/trabajo-de-") ? buildListingHtml([OFFER_PATH]) : "<html></html>"));
-    await assert.rejects(fetchComputrabajoJobs(), /No se pudo interpretar ninguna oferta/);
+    await assert.rejects(fetchComputrabajoJobs(["cajera"]), /No se pudo interpretar ninguna oferta/);
   });
 });

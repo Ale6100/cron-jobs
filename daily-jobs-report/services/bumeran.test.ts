@@ -73,28 +73,32 @@ describe("fetchBumeranJobs", () => {
   beforeEach(silenceConsole);
   afterEach(() => mock.restoreAll());
 
-  it("consulta cada búsqueda y tolera que algunas fallen", async () => {
+  it("consulta cada búsqueda indicada y tolera que algunas fallen", async () => {
+    const queries = ["cajera", "vendedora", "manicura"];
+    const queriedTerms: string[] = [];
     const fetchMock = mockFetch((_url, init) => {
       const { query } = JSON.parse(String(init?.body)) as { query: string };
+      queriedTerms.push(query);
       if (query === "cajera") {
         return jsonResponse({ content: [buildJob(1)] });
       }
       return new Response("error", { status: 500 });
     });
 
-    const jobs = await fetchBumeranJobs();
+    const jobs = await fetchBumeranJobs(queries);
 
     assert.deepEqual(jobs.map((job) => job.id), ["bumeran-1"]);
-    assert.equal(fetchMock.mock.callCount(), 6);
+    assert.equal(fetchMock.mock.callCount(), 3);
+    assert.deepEqual(queriedTerms, queries);
   });
 
   it("falla si todas las búsquedas fallan", async () => {
     mockFetch(() => new Response("error", { status: 403 }));
-    await assert.rejects(fetchBumeranJobs(), /Fallaron todas las búsquedas en Bumeran/);
+    await assert.rejects(fetchBumeranJobs(["cajera", "vendedora"]), /Fallaron todas las búsquedas en Bumeran/);
   });
 
   it("falla si la API cambia de formato y no trae el listado", async () => {
     mockFetch(() => jsonResponse({ results: [] }));
-    await assert.rejects(fetchBumeranJobs(), /Fallaron todas las búsquedas en Bumeran/);
+    await assert.rejects(fetchBumeranJobs(["cajera"]), /Fallaron todas las búsquedas en Bumeran/);
   });
 });

@@ -14,15 +14,6 @@ interface JobPostingJsonLd {
 
 const BASE_URL = "https://ar.computrabajo.com";
 
-const SEARCH_SLUGS = [
-  "cajera",
-  "vendedora",
-  "repositor",
-  "atencion-al-cliente",
-  "ayudante-de-cocina",
-  "cuidado-de-adultos-mayores",
-];
-
 const LOCATION_SLUG = "capital-federal";
 
 const MAX_JOBS = 15;
@@ -109,14 +100,14 @@ export const parseJobPosting = (detailHtml: string, url: string): CleanJob | nul
   return null;
 };
 
-export const fetchComputrabajoJobs = async (): Promise<CleanJob[]> => {
+export const fetchComputrabajoJobs = async (searchSlugs: string[]): Promise<CleanJob[]> => {
   const listingResults = await Promise.allSettled(
-    SEARCH_SLUGS.map((slug) => fetchHtml(`${BASE_URL}/trabajo-de-${slug}-en-${LOCATION_SLUG}`))
+    searchSlugs.map((slug) => fetchHtml(`${BASE_URL}/trabajo-de-${slug}-en-${LOCATION_SLUG}`))
   );
 
   const pathsBySearch = listingResults.flatMap((result, index) => {
     if (result.status === "rejected") {
-      console.warn(`Aviso: la búsqueda "${SEARCH_SLUGS[index]}" en Computrabajo falló:`, result.reason);
+      console.warn(`Aviso: la búsqueda "${searchSlugs[index]}" en Computrabajo falló:`, result.reason);
       return [];
     }
     return [extractOfferPaths(result.value)];

@@ -12,15 +12,6 @@ interface BumeranJobItem {
   modalidadTrabajo?: string;
 }
 
-const SEARCH_QUERIES = [
-  "cajera",
-  "vendedora",
-  "repositora",
-  "atención al cliente",
-  "ayudante de cocina",
-  "cuidado de adultos mayores",
-];
-
 const MAX_JOBS = 20;
 
 const stripHtml = (html: string): string => {
@@ -98,12 +89,12 @@ export const pickJobsAcrossQueries = (resultsByQuery: BumeranJobItem[][]): Clean
   return picked;
 };
 
-export const fetchBumeranJobs = async (): Promise<CleanJob[]> => {
-  const settledResults = await Promise.allSettled(SEARCH_QUERIES.map(searchBumeran));
+export const fetchBumeranJobs = async (queries: string[]): Promise<CleanJob[]> => {
+  const settledResults = await Promise.allSettled(queries.map(searchBumeran));
 
   const resultsByQuery = settledResults.flatMap((result, index) => {
     if (result.status === "rejected") {
-      console.warn(`Aviso: la búsqueda "${SEARCH_QUERIES[index]}" en Bumeran falló:`, result.reason);
+      console.warn(`Aviso: la búsqueda "${queries[index]}" en Bumeran falló:`, result.reason);
       return [];
     }
     return [result.value];
