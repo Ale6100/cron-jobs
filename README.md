@@ -52,7 +52,7 @@ Los scripts `*-test` (por ejemplo `daily-jobs-report-test`) no son tests automat
 | `alejandro` | Desarrollo frontend/full stack, remoto o en CABA y alrededores | Get on Board, RemoteOK, Remotive | USD/hora y su equivalente en ARS | 1 |
 | `alejandro-exactas` | Puestos para estudiantes de Ciencias de la Computación afines a desarrollo de software, remoto o en CABA y alrededores | Exactas UBA | USD/hora y su equivalente en ARS | Todas las nuevas |
 | `mariana` | Comercio, caja, atención al cliente, ayudante de cocina, cuidado de personas mayores y búsquedas inclusivas (CUD), remoto o en CABA y alrededores | Bumeran, Computrabajo | ARS/mes | 4 |
-| `stefy` | Ventas/comercio (especialmente indumentaria), caja, atención al cliente, reposición, promoción, eventos, ayudante de cocina, cuidado de niños y adultos y manicuría, remoto o en CABA y alrededores | Bumeran, Computrabajo | ARS/mes | 4 |
+| `stefy` | Ventas/comercio (especialmente indumentaria), caja, atención al cliente, reposición, promoción, eventos, ayudante de cocina, cuidado de niños y adultos y manicuría, remoto o en CABA y alrededores | Bumeran, Computrabajo | ARS/mes | 3 |
 
 Bumeran se consulta mediante la API interna que usa su propio sitio y Computrabajo leyendo sus páginas públicas, ya que ninguno ofrece una API pública; un cambio en esos sitios puede romper la extracción sin aviso.
 

@@ -92,7 +92,7 @@ export const stefyProfile: JobsReportProfile = {
   firstName: "Stefy",
   telegramChatIdEnvVar: "TELEGRAM_CHAT_ID_STEFY_BUSQUEDA_TRABAJO",
   showScore: false,
-  maxJobsInReport: 4,
+  maxJobsInReport: 3,
   sources: [
     { name: "Bumeran", fetchJobs: () => fetchBumeranJobs(BUMERAN_QUERIES) },
     { name: "Computrabajo", fetchJobs: () => fetchComputrabajoJobs(COMPUTRABAJO_SLUGS) },

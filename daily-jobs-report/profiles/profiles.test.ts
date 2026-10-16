@@ -61,13 +61,13 @@ describe("marianaProfile", () => {
 });
 
 describe("stefyProfile", () => {
-  it("muestra el pago como sueldo mensual en ARS, envía hasta 4 ofertas y no persiste estado de vistas", async () => {
+  it("muestra el pago como sueldo mensual en ARS, envía hasta 3 ofertas y no persiste estado de vistas", async () => {
     const payFormat = await stefyProfile.loadPayFormat();
 
     assert.equal(stefyProfile.telegramChatIdEnvVar, "TELEGRAM_CHAT_ID_STEFY_BUSQUEDA_TRABAJO");
     assert.equal(payFormat.headerNote, undefined);
     assert.match(payFormat.formatPay(750000), /^~\$\s750\.000 ARS\/mes$/);
-    assert.equal(stefyProfile.maxJobsInReport, 4);
+    assert.equal(stefyProfile.maxJobsInReport, 3);
     assert.equal(stefyProfile.seenJobsStateFile, undefined);
   });
 
