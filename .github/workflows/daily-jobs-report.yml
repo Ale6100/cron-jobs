@@ -14,8 +14,8 @@ on:
           - mariana
           - stefy
   schedule:
-    # Todos los días a las 14:00 UTC (11:00 AM hora Argentina)
-    - cron: '0 14 * * *'
+    # Todos los días a las 15:00 UTC (12:00 PM hora Argentina)
+    - cron: '0 15 * * *'
 
 jobs:
   run-script:
@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        profile: ${{ fromJSON((inputs.profile && inputs.profile != 'todos') && format('["{0}"]', inputs.profile) || '["mariana", "stefy", "alejandro-exactas"]') }}
+        profile: ${{ fromJSON((inputs.profile && inputs.profile != 'todos') && format('["{0}"]', inputs.profile) || '["mariana", "stefy", "alejandro-exactas", "alejandro"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

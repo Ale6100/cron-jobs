@@ -9,6 +9,7 @@ Automatizaciones y reportes programados para uso personal, ejecutados periódica
 | `daily-jobs-report` | Recolecta ofertas laborales multi-fuente según un perfil, las evalúa con Google Gemini y notifica a diario las más afines, ordenadas por afinidad y pago estimado. Ver [Perfiles del reporte de empleos](#perfiles-del-reporte-de-empleos). | Telegram |
 | `daily-deals-report` | Monitorea y recopila ofertas destacadas de tiendas de tecnología y electrodomésticos. | Telegram |
 | `daily-financial-report` | Consulta gastos pendientes en el backend y envía un resumen de pagos. | WhatsApp |
+| `weekly-epic-games-report` | Consulta los juegos pagos que Epic Games Store ofrece gratis por tiempo limitado y notifica las promociones activas y próximas los viernes. | Telegram |
 
 ### Comandos de desarrollo
 
@@ -25,6 +26,9 @@ npm run daily-jobs-report-test -- mariana
 
 # Ofertas comerciales
 npm run daily-deals-report
+
+# Juegos gratuitos semanales de Epic Games
+npm run weekly-epic-games-report
 
 # Reporte financiero
 npm run daily-financial-report
@@ -62,7 +66,7 @@ Un perfil puede recordar las ofertas ya evaluadas (`seenJobsStateFile`) para man
 
 Antes de evaluar, las ofertas de las distintas fuentes se intercalan equitativamente y se deduplican entre portales por `empresa + título` (salvo cuando la empresa es confidencial o genérica), para que ninguna fuente desplace a las demás ni se gaste cupo de evaluación en el mismo aviso publicado en varios sitios. Las fuentes de `mariana` y `stefy` prefiltran por zona de forma amplia y la cercanía real la evalúa Gemini: Bumeran deja pasar los remotos y lo publicado en CABA o Provincia de Buenos Aires, LinkedIn busca en Buenos Aires las publicadas en los últimos 7 días, y Computrabajo busca solo en CABA, porque su búsqueda por ubicación no permite incluir el conurbano sin incluir toda la provincia. Cada fuente alterna entre las búsquedas del perfil (cajera, vendedora, etc.) para que ninguna llene sola el tope. Los topes (15 en Bumeran, 10 en Computrabajo y 10 en LinkedIn, más bajos donde cada oferta requiere consultar su página de detalle) suman las 35 ofertas que Gemini evalúa como máximo.
 
-Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo en el workflow (a las opciones del input `profile` y a la lista por defecto de la `matrix`) y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de a uno por vez porque comparten la cuota de Gemini, y si uno falla el resto igual se envía. El cron corre los perfiles de la lista por defecto de la `matrix`; al ejecutarlo a mano ("Run workflow") se puede elegir uno solo, incluso uno que no esté en esa lista. `alejandro` está pausado: no figura en la lista por defecto, pero su código se mantiene y se reactiva volviendo a sumarlo ahí.
+Para agregar un perfil: crear su archivo en `profiles/`, registrarlo en `profiles/index.ts`, sumarlo en el workflow (a las opciones del input `profile` y a la lista por defecto de la `matrix`) y cargar su variable de chat en `.env` y en los Secrets. El workflow corre un job por perfil, de a uno por vez porque comparten la cuota de Gemini, y si uno falla el resto igual se envía. El cron corre los perfiles de la lista por defecto de la `matrix`; al ejecutarlo a mano ("Run workflow") se puede elegir uno solo, incluso uno que no esté en esa lista.
 
 El repositorio es público: los perfiles no deben incluir datos personales (documento, teléfono, mail, dirección exacta). Los CV usados como referencia (`cv-*.pdf`) están ignorados por git.
 

@@ -29,7 +29,7 @@ const PROGRESS_CRITERION = `Avance en la carrera:
 
 const ROLE_CRITERION = `Tipo de puesto:
    - ACEPTAR puestos de desarrollo de software (frontend, backend, full stack), integración de LLMs o automatización, y otros puestos técnicos de computación de nivel inicial donde su experiencia como desarrollador sea útil.
-   - Valorar más los que coinciden con su stack (React, Next.js, TypeScript, NestJS, Node.js, Python).
+   - Valorar más los que coinciden con su stack principal (React, Next.js, TypeScript, NestJS, Node.js, Python), admitiendo también Vue.js o C# / .NET.
    - DESCARTAR puestos sin relación con el desarrollo de software (ej: instalación de equipos, ventas, atención al público) o que exijan como excluyentes herramientas o conocimientos que no tiene (ej: SAP, SAS).`;
 
 const EXACTAS_LANGUAGE_NOTE = `Nota sobre idiomas en estas ofertas: el campo "Idiomas" suele indicar solo un nivel, sin aclarar el idioma ni si es oral o escrito. Si pide nivel avanzado, no descartar automáticamente, pero bajar el puntaje y mencionarlo en el motivo.`;

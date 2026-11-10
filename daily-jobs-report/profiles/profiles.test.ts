@@ -43,6 +43,15 @@ describe("alejandroProfile", () => {
       ["Get on Board", "RemoteOK", "Remotive", "FreeHire", "LinkedIn"]
     );
   });
+
+  it("incluye en el prompt de Gemini las tecnologías prioritarias, secundarias (Vue, C#) y herramientas de testing", () => {
+    const header = alejandroProfile.buildGeminiPromptHeader({ formatPay: String });
+
+    assert.match(header, /Vue\.js/);
+    assert.match(header, /C#/);
+    assert.match(header, /Vitest/);
+    assert.match(header, /Priorizar fuertemente el stack principal/);
+  });
 });
 
 describe("marianaProfile", () => {

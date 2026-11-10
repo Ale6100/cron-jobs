@@ -38,7 +38,7 @@ export interface CandidateProfile {
   avoidKeywords: string[];
 }
 
-// Fecha de inicio de carrera tomada de portfolio/utils/experience.ts (07/2023, UNAHUR)
+// Fecha de inicio de carrera tomada de portfolio/content/experience.ts (07/2023, UNAHUR)
 export const CAREER_START_DATE = new Date(2023, 6, 1);
 
 export const calculateYearsOfExperience = (now = new Date()): number => {
@@ -67,15 +67,15 @@ export const getCandidateProfile = (): CandidateProfile => {
       hybridOrOnsite: "Aceptado únicamente si la sede física es en CABA o alrededores. Descartar híbrido o presencial en otras ciudades o países.",
     },
     technologies: {
-      frontend: ["React", "Next.js", "TypeScript", "JavaScript", "Tailwind CSS", "shadcn/ui", "Radix UI", "HTML5", "CSS3"],
-      backend: ["NestJS", "Node.js", "Express", "Python", "Entity Framework", "PHP", "Yii 2", "REST APIs"],
+      frontend: ["React", "Next.js", "TypeScript", "JavaScript", "Tailwind CSS", "shadcn/ui", "HTML5", "CSS3", "Vue.js"],
+      backend: ["NestJS", "Node.js", "Express", "Python", "C#", ".NET", "Entity Framework", "PHP", "Yii 2", "REST APIs"],
       aiAndLlms: ["Integración de LLMs a herramientas y productos", "Tool Calling / Function Calling", "APIs de IA (Gemini, etc.)", "Prompt Engineering"],
       databases: ["PostgreSQL", "SQL Server", "MySQL", "MongoDB", "Firebase"],
-      tools: ["Git", "GitHub", "GitLab", "Docker", "Vite", "Turbopack"],
+      tools: ["Git", "GitHub", "GitLab", "Docker", "Vite", "Turbopack", "Vitest"],
     },
     highlights: [
-      "Desarrollo frontend moderno con Next.js y React en producción (Virtualisa)",
-      "Desarrollo full stack en proyectos gubernamentales de alta escala con NestJS, React y bases de datos relacionales (Ministerio de Defensa)",
+      "Desarrollo frontend moderno con Next.js y React en producción, interfaces con Vue 3 y flujos complejos de formularios y permisos (Virtualisa)",
+      "Desarrollo full stack como programador principal en 3 de 4 proyectos asignados con NestJS, React, C#/Entity Framework, testing automatizado con Vitest y bases de datos relacionales de alta escala (Ministerio de Defensa)",
       "Desarrollo web comunitario con PHP/Yii2 (UNAHUR)",
       "Desarrollo con Python e integración práctica de LLMs a herramientas y automatizaciones",
     ],
@@ -145,7 +145,10 @@ export const SCORE_CRITERION = "Score: Del 1 al 10. Solo marcar isMatch = true s
 
 export const numberCriteria = (criteria: string[]): string => criteria.map((criterion, index) => `${index + 1}. ${criterion}`).join("\n");
 
-const TECHNOLOGIES_CRITERION = "Tecnologías: Debe coincidir fuertemente con el stack del candidato (React, Next.js, TypeScript, NestJS, Fullstack, Node.js, Python, integración de herramientas con LLMs). Descartar roles de C++, Java clásico, Rust o tecnologías totalmente ajenas salvo que sea un rol frontend agnóstico.";
+const TECHNOLOGIES_CRITERION = `Tecnologías:
+   - Priorizar fuertemente el stack principal del candidato: React, Next.js, TypeScript, NestJS, Node.js, Python e integración de herramientas con LLMs.
+   - ACEPTAR y considerar también vacantes que incluyan Vue.js en el frontend, o C# / .NET / Entity Framework en el backend, aunque no sean el foco exclusivo.
+   - DESCARTAR roles centrados en C++, Java clásico, Rust o tecnologías totalmente ajenas, salvo que se trate de un rol frontend agnóstico.`;
 
 const buildGeminiPromptHeader = (): string => {
   const profile = getCandidateProfile();

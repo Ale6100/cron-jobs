@@ -1,0 +1,30 @@
+name: Weekly Epic Games Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Todos los viernes a las 15:00 UTC (12:00 PM hora Argentina)
+    - cron: '0 15 * * 5'
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    environment: cron
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Execute script
+        run: node --import tsx weekly-epic-games-report/index.ts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
