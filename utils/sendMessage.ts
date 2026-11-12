@@ -1,4 +1,4 @@
-import { Bot } from 'grammy';
+import { Bot, GrammyError } from 'grammy';
 
 type SendMessageParams = {
   phone: string;
@@ -28,8 +28,22 @@ type SendMessageTelegramParams = {
 }
 
 export const sendMessageTelegram = async ({ token, chatId, text }: SendMessageTelegramParams) => {
-  const bot = new Bot(token);
+  const bot = new Bot(token, {
+    client: {
+      fetch: globalThis.fetch,
+    },
+  });
 
-  const message = await bot.api.sendMessage(chatId, text, { parse_mode: 'Markdown' });
-  console.log(`Mensaje enviado a Telegram (message_id ${message.message_id})`);
-}
+  try {
+    const message = await bot.api.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    console.log(`Mensaje enviado a Telegram (message_id ${message.message_id})`);
+  } catch (error) {
+    if (error instanceof GrammyError && error.error_code === 400 && error.description.includes("can't parse entities")) {
+      console.warn(`Aviso: Telegram rechazó parse_mode 'Markdown' (${error.description}). Reenviando mensaje como texto plano...`);
+      const fallbackMessage = await bot.api.sendMessage(chatId, text);
+      console.log(`Mensaje enviado a Telegram en texto plano (message_id ${fallbackMessage.message_id})`);
+      return;
+    }
+    throw error;
+  }
+};

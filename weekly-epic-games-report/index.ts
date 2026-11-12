@@ -1,4 +1,5 @@
 import { sendMessageTelegram } from "../utils/sendMessage.js";
+import { escapeMarkdown, getGitHubRunUrl } from "../utils/util.js";
 import { fetchEpicFreeGames } from "./epicGames.js";
 import { formatWeeklyEpicGamesMessage } from "./message.js";
 
@@ -31,10 +32,12 @@ const main = async () => {
     console.error("Error en Weekly Epic Games Report:", error);
     try {
       const errorMsg = error instanceof Error ? error.message : String(error);
+      const runUrl = getGitHubRunUrl();
+      const runUrlLine = runUrl ? `\n🔗 ${escapeMarkdown(runUrl)}` : "";
       await sendMessageTelegram({
         token: TELEGRAM_BOT_TOKEN,
         chatId: TELEGRAM_CHAT_ID,
-        text: `⚠️ *Error en Weekly Epic Games Report:*\n\`\`\`\n${errorMsg.slice(0, 3000)}\n\`\`\``,
+        text: `⚠️ *Error en Weekly Epic Games Report:*\n\`\`\`\n${errorMsg.slice(0, 3000)}\n\`\`\`${runUrlLine}`,
       });
     } catch (telegramError) {
       console.error("Tampoco se pudo enviar el aviso de error a Telegram:", telegramError);

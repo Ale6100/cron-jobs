@@ -1,5 +1,6 @@
 import { getDealsFravega } from "./sites/fravega.js";
 import { sendMessageTelegram } from '../utils/sendMessage.js';
+import { getGitHubRunUrl } from '../utils/util.js';
 import { getDealsCetrogar } from "./sites/cetrogar.js";
 import { getDealsLenovo } from "./sites/lenovo.js";
 import { getDealsMercadoLibre } from "./sites/mercadoLibre.js";
@@ -153,10 +154,12 @@ try {
 } catch (error) {
   console.error("No se pudo enviar el mensaje de ofertas:", error);
   try {
+    const runUrl = getGitHubRunUrl();
+    const runUrlLine = runUrl ? `\n🔗 ${runUrl}` : "";
     await sendMessageTelegram({
       token: TELEGRAM_BOT_TOKEN,
       chatId: TELEGRAM_CHAT_ID,
-      text: `Se cayó la app Ofertas del día: no se pudo mandar el mensaje con las ofertas (${messageText.length} caracteres). Error: ${error instanceof Error ? error.message : error}`,
+      text: `Se cayó la app Ofertas del día: no se pudo mandar el mensaje con las ofertas (${messageText.length} caracteres). Error: ${error instanceof Error ? error.message : error}${runUrlLine}`,
     });
   } catch (error_) {
     console.error("Tampoco se pudo enviar el aviso de error:", error_);

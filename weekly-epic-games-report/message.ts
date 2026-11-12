@@ -43,7 +43,7 @@ const formatCurrentGameItem = (game: CleanFreeGame): string => {
   return `🕹️ *${escapeMarkdown(game.title)}*
 ${formatPriceLine(game)}
 ${formatGenresLine(game.genres)}📅 *Disponible gratis hasta:* ${formatEpicDate(game.endDate)}
-🔗 ${game.url}`;
+🔗 ${escapeMarkdown(game.url)}`;
 };
 
 const formatUpcomingDetails = (game: CleanFreeGame): string => {

@@ -1,5 +1,5 @@
 import { evaluateJobsWithGemini, MAX_JOBS_TO_EVALUATE, type JobMatch } from "./services/gemini.js";
-import { splitIntoMessages } from "./message.js";
+import { formatJobItem, formatJobsReportErrorMessage, splitIntoMessages } from "./message.js";
 import { getProfileFromArgs } from "./profiles/index.js";
 import { computeSeenJobIds, consolidateCandidateJobs, loadSeenJobIds, saveSeenJobIds } from "./seenJobs.js";
 import type { PayFormat } from "./types.js";
@@ -16,29 +16,6 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID || !REPORT_CHAT_ID || !GEMINI_API_K
   console.error(`Faltan variables de entorno necesarias para ejecutar daily-jobs-report (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, ${profile.telegramChatIdEnvVar}, GEMINI_API_KEY)`);
   process.exit(1);
 }
-
-const formatSalary = (job: JobMatch, payFormat: PayFormat): string => {
-  if (job.estimatedPay && job.estimatedPay > 0) {
-    return payFormat.formatPay(job.estimatedPay);
-  }
-  return "A convenir / No especificado";
-};
-
-const escapeMarkdown = (text: string): string => text.replace(/([_*`[])/g, "\\$1");
-
-const formatJobItem = (job: JobMatch, payFormat: PayFormat): string => {
-  const scoreLine = profile.showScore ? `⭐ *Score:* ${job.score}/10\n` : "";
-  const closingDateLine = job.closingDate ? `📅 *Cierre:* ${escapeMarkdown(job.closingDate)}\n` : "";
-
-  return `
-💼 *${escapeMarkdown(job.title)}* - *${escapeMarkdown(job.company)}*
-🌐 *Portal:* ${job.source}
-📍 *Ubicación:* ${escapeMarkdown(job.location)}
-${scoreLine}💵 *Pago estimado:* ${formatSalary(job, payFormat)}
-${closingDateLine}💡 *Por qué te conviene:* ${escapeMarkdown(job.reason)}
-🔗 ${job.url}
-`;
-};
 
 const main = async () => {
   try {
@@ -114,7 +91,7 @@ const main = async () => {
     const SEPARADOR = "\n━━━━━━━━━━━━━━━━\n";
     const headerNote = payFormat.headerNote ? ` (${payFormat.headerNote})` : "";
     const header = `🎯 *OFERTAS DE EMPLEO DESTACADAS*\n_Filtro inteligente para ${profile.firstName}${headerNote}_\n`;
-    const jobItems = matchedJobs.slice(0, profile.maxJobsInReport).map((job) => `${SEPARADOR}${formatJobItem(job, payFormat)}`);
+    const jobItems = matchedJobs.slice(0, profile.maxJobsInReport).map((job) => `${SEPARADOR}${formatJobItem(job, payFormat, profile.showScore)}`);
 
     for (const text of splitIntoMessages(header, jobItems)) {
       await sendMessageTelegram({
@@ -128,11 +105,10 @@ const main = async () => {
   } catch (error) {
     console.error(`Error en Daily Jobs Report (${profile.firstName}):`, error);
     try {
-      const errorMsg = error instanceof Error ? error.message : String(error);
       await sendMessageTelegram({
         token: TELEGRAM_BOT_TOKEN,
         chatId: TELEGRAM_CHAT_ID,
-        text: `⚠️ *Error en Daily Jobs Report (${profile.firstName}):*\n\`\`\`\n${errorMsg.slice(0, 3000)}\n\`\`\``,
+        text: formatJobsReportErrorMessage(profile.firstName, error),
       });
     } catch (telegramError) {
       console.error("Tampoco se pudo enviar el aviso de error a Telegram:", telegramError);
