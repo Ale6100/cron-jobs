@@ -99,4 +99,21 @@ describe("sendMessageTelegram", () => {
 
     assert.equal(requests.length, 1);
   });
+
+  it("envía a fetch un AbortSignal nativo compatible con Node 24", async () => {
+    let receivedSignal: AbortSignal | null | undefined;
+
+    mockFetch(async (_url, init) => {
+      receivedSignal = init?.signal;
+      return jsonResponse({ ok: true, result: { message_id: 103 } });
+    });
+
+    await sendMessageTelegram({
+      token: "test-token",
+      chatId: "12345",
+      text: "Hola",
+    });
+
+    assert.ok(receivedSignal instanceof globalThis.AbortSignal);
+  });
 });

@@ -27,10 +27,30 @@ type SendMessageTelegramParams = {
   text: string;
 }
 
+type AbortSignalLike = Pick<AbortSignal, 'aborted' | 'addEventListener'>;
+
+// grammy usa el polyfill abort-controller para su signal; Node 24 exige una instancia nativa de AbortSignal en globalThis.fetch
+const fetchWithNativeAbortSignal: typeof fetch = (input, init) => {
+  const signal: AbortSignalLike | null | undefined = init?.signal;
+  if (!signal || signal instanceof globalThis.AbortSignal) {
+    return globalThis.fetch(input, init);
+  }
+
+  const controller = new globalThis.AbortController();
+  const abort = () => controller.abort();
+  if (signal.aborted) {
+    controller.abort();
+  } else {
+    signal.addEventListener('abort', abort, { once: true });
+  }
+
+  return globalThis.fetch(input, { ...init, signal: controller.signal });
+};
+
 export const sendMessageTelegram = async ({ token, chatId, text }: SendMessageTelegramParams) => {
   const bot = new Bot(token, {
     client: {
-      fetch: globalThis.fetch,
+      fetch: fetchWithNativeAbortSignal,
     },
   });
 
