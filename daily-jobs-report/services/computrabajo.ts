@@ -14,6 +14,7 @@ interface JobPostingJsonLd {
 
 const BASE_URL = "https://ar.computrabajo.com";
 
+// Computrabajo no permite filtrar el conurbano sin incluir toda la provincia de Buenos Aires.
 const LOCATION_SLUG = "capital-federal";
 
 const MAX_JOBS = 10;

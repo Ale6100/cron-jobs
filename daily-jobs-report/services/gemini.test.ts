@@ -64,17 +64,18 @@ describe("fetchAvailableGeminiModels", () => {
   beforeEach(silenceConsole);
   afterEach(() => mock.restoreAll());
 
-  it("prioriza modelos rápidos (hydrogen/flash), luego flash-lite, luego argon/pro y por último carbon, ordenados por versión", async () => {
+  it("ordena por versión exacta descendente, luego por rapidez y por último estables antes que preview", async () => {
     mockFetch(() => jsonResponse({
       models: [
         "gemini-4-carbon",
         "gemini-3.1-pro-preview",
         "gemini-4-argon",
+        "gemini-4-neon",
+        "gemini-3.5-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite-preview",
         "gemini-3.1-flash-lite",
         "gemini-3-flash-preview",
-        "gemini-3.5-flash",
         "gemini-4-hydrogen",
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
@@ -83,18 +84,19 @@ describe("fetchAvailableGeminiModels", () => {
 
     assert.deepEqual(await fetchAvailableGeminiModels("key"), [
       "gemini-4-hydrogen",
-      "gemini-3.5-flash",
-      "gemini-3-flash-preview",
+      "gemini-4-neon",
+      "gemini-4-argon",
+      "gemini-4-carbon",
       "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
       "gemini-3.1-flash-lite",
       "gemini-3.1-flash-lite-preview",
-      "gemini-4-argon",
       "gemini-3.1-pro-preview",
-      "gemini-4-carbon",
+      "gemini-3-flash-preview",
     ]);
   });
 
-  it("prioriza modelos rápidos y luego la versión más nueva, descartando modelos no aptos", async () => {
+  it("descarta modelos no aptos para generar texto o de versión anterior a 3", async () => {
     mockFetch(() => jsonResponse({
       models: [
         { name: "models/gemini-3.5-pro", supportedGenerationMethods: ["generateContent"] },
@@ -111,12 +113,12 @@ describe("fetchAvailableGeminiModels", () => {
 
   it("usa la lista de respaldo si la API no ofrece ningún modelo apto", async () => {
     mockFetch(() => jsonResponse({ models: [{ name: "models/gemini-2.0-flash", supportedGenerationMethods: ["generateContent"] }] }));
-    assert.deepEqual(await fetchAvailableGeminiModels("key"), ["gemini-4-hydrogen", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]);
+    assert.deepEqual(await fetchAvailableGeminiModels("key"), ["gemini-4-hydrogen", "gemini-4-neon", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]);
   });
 
   it("usa la lista de respaldo si no puede consultar los modelos", async () => {
     mockFetch(() => new Response("error", { status: 500 }));
-    assert.deepEqual(await fetchAvailableGeminiModels("key"), ["gemini-4-hydrogen", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]);
+    assert.deepEqual(await fetchAvailableGeminiModels("key"), ["gemini-4-hydrogen", "gemini-4-neon", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]);
   });
 });
 

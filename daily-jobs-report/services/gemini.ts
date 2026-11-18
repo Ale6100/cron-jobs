@@ -60,11 +60,12 @@ export const describeQuotaError = (errorBody: string): string => {
   return retryDelay ? `${summary}; reintentar en ${retryDelay}` : summary;
 };
 
-const getModelTierPriority = (name: string): number => {
+const getModelSpeedPriority = (name: string): number => {
   if (name.includes("flash")) {
-    return name.includes("lite") ? 1 : 0;
+    return name.includes("lite") ? 0 : 1;
   }
   if (name.includes("hydrogen")) return 0;
+  if (name.includes("neon")) return 1;
   if (name.includes("argon") || name.includes("pro")) return 2;
   if (name.includes("carbon")) return 3;
   return 4;
@@ -105,10 +106,10 @@ export const fetchAvailableGeminiModels = async (apiKey: string): Promise<string
           extractVersion(name) >= 3.0
       )
       .sort((a, b) => {
-        const tierDiff = getModelTierPriority(a) - getModelTierPriority(b);
-        if (tierDiff !== 0) return tierDiff;
         const newestVersionFirst = extractVersion(b) - extractVersion(a);
         if (newestVersionFirst !== 0) return newestVersionFirst;
+        const speedDiff = getModelSpeedPriority(a) - getModelSpeedPriority(b);
+        if (speedDiff !== 0) return speedDiff;
         return Number(a.includes("preview")) - Number(b.includes("preview"));
       });
 
@@ -119,7 +120,7 @@ export const fetchAvailableGeminiModels = async (apiKey: string): Promise<string
     console.warn("Aviso: No se pudo obtener la lista dinámica de modelos de Gemini, usando modelos de respaldo:", error);
   }
 
-  return ["gemini-4-hydrogen", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"];
+  return ["gemini-4-hydrogen", "gemini-4-neon", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"];
 };
 
 export const evaluateJobsWithGemini = async (
